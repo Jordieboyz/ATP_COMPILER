@@ -102,7 +102,7 @@ def compile_as(ast, func_decl, filename):
     routine_dict["init"].append(".cpu cortex-m0")
     routine_dict["init"].append(".align 1")
     
-    FILE=open("out.asm", "w")
+    FILE=open(filename, "w")
     prettyPrinter(routine_dict, FILE)
     FILE.close()
 

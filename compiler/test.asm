@@ -1,22 +1,34 @@
 .global start
-.text
-.align 4
+.section .text
+.cpu cortex-m0
+.align 1
 
 start:
-   push { r5, lr }
-   ldr r0, =msg
-   mov  r5, r0
-loop: 
-   ldrb r0, [ r5 ]
-   add  r0, r0, #0
-   beq  done
-   bl putCharacter
-   add  r5, r5, #1
-   b    loop
-done: 
-   pop  { r5, pc }
+	push { lr }
+	movs r0, #7
+	bl odd
 
-.data 
-msg: 
-.asciz "hELLO WORLD, THE answeerefeawfdf2134325r IS 42! @[]`{}~\n"
+odd:
+	push { lr }
+	cmp r0, #0
+	beq ret_3
+	sub r0, r0, #1
+	bl even
+	pop { pc }
+
+ret_3:
+	movs r0, #0
+	pop { pc }
+
+even:
+	push { lr }
+	cmp r0, #0
+	beq ret_5
+	sub r0, r0, #1
+	bl odd
+	pop { pc }
+
+ret_5:
+	movs r0, #1
+	pop { pc }
 

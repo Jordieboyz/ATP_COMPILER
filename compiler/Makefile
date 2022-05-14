@@ -18,5 +18,7 @@ HEADERS := UART.h waitable.h
 SEARCH  := UART
 
 CLEAN += .vscode
+CLEAN += __pycache__
+
 RELATIVE	      ?= ../
 include           $(RELATIVE)Makefile.inc
