@@ -4,4 +4,6 @@
 *.map
 *.ld
 
-*.vscode
+.vscode
+testing-shizzle
+__pycache__
