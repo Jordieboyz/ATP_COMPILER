@@ -1,0 +1,47 @@
+bigger aspects:
+    [<VAR : INT>, <EXPR>]> (...) <                      these are loop formats.      
+    [<EXPR>]> (...) <
+    
+    func_ <NAME>(<PARAMS>) > (...) !<RETURNVALUE> <     this is the format for a function
+    
+    ? <EXPR> > (...) <                                  this is the format for an IF-statement
+                    
+    <VAR>=x,                                            puts x in <VAR>
+    
+weird character:
+    >,                      opening new scope
+    <,                      closing previous opened scope
+    (,                      opening paramater input for functions
+    ),                      closing parameter input for functions
+    ,                       separator
+    
+expressions:
+    $eq,    equivalent of: ==
+    
+    $neq,   equivalent of: !=
+    
+    $lt,    equivalent of: <
+    
+    $gt,    equivalent of: >
+    
+    $let,   equivalent of: <=
+    
+    $get,   equivalent of: >=
+    
+    x+,   increments the data on x
+           
+    x-,   decrements the data on x
+            
+    /x,  divides the data on x
+            
+    *x,  multiplies the data on x
+    
+    x%y,  put remainder x    
+
+
+
+    # print("\ncur ptr: ", ptr, end='\n')
+    # for i in range(len(code.statements)):
+    #     print(i,".  ", code.statements[i], end='\n')
+    # print(state)
+    # print("returned: ", state.returned)
