@@ -1,0 +1,25 @@
+# makefile which links to a makefile which will build, compile, link and maybe run the whole project
+
+# SOURCES and HEADERS are used to build and compile the whole project
+# SEARCH are folders/paths where to find files
+# COMMON is a param mostly for compiler flags
+# CLEAN is just for the cleanup 
+
+#SERIAL_PORT := /dev/ttyACM0
+
+# arduino due flags
+COMMON        += -mcpu=cortex-m3 -mthumb -fomit-frame-pointer -march=armv7-m
+
+
+# arduino specific folders
+SEARCH		+= include/cortex
+SEARCH		+= include/cortex/atmel
+SEARCH		+= include/cortex/atmel/sam3xa/include
+
+# arduino specific files
+SOURCES         += cortex.c
+CORTEX_LD	 := linkerscript_cortex.c
+
+
+RELATIVE	      ?= ./
+include           $(RELATIVE)Makefile.inc

@@ -223,7 +223,5 @@ static void system_init_flash( uint32_t dw_clk )
     }
   }
 }
-
 }; // struct sam3xa
-
 uint32_t sam3xa::SystemCoreClock = CHIP_FREQ_MAINCK_RC_4MHZ;

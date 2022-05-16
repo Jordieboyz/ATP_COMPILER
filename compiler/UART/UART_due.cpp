@@ -1,7 +1,6 @@
-#include "UART.h"
+#include "UART_due.h"
 
-
-DUE_UART::DUE_UART(){
+UART_due::UART_due(){
     // enable the clock to port A
     PMC->PMC_PCER0 = 1 << ID_PIOA;
     
@@ -30,13 +29,13 @@ DUE_UART::DUE_UART(){
     due_uart->UART_CR = UART_CR_RXEN | UART_CR_TXEN;
 }
 
-void DUE_UART::putc(char c){
+void UART_due::putc(char c){
     // wait until no character has been written to UART_THR (or not yet transferred to the Shift Register)
     while((due_uart->UART_SR & UART_SR_TXRDY) == 0){};
     due_uart->UART_THR = c;
 }
 
-char DUE_UART::getc(void){
+char UART_due::getc(void){
     // wait until at least one complete character is received
     while((due_uart->UART_SR & UART_SR_RXRDY) == 0){};
     return due_uart->UART_RHR;

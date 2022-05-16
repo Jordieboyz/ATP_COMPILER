@@ -1,0 +1,15 @@
+   ATP/compiler/include/tools/BOSSA-Arduino
+      from https://github.com/flutterwireless/BOSSA-Arduino
+      redistribution allowed with attribution, no misuse of the authors name
+      
+   ATP/compiler/include/tools/lpc21isp_197
+      from http://sourceforge.net/projects/lpc21isp/files/lpc21isp/
+	
+   ATP/compiler/include/cortex.c
+   ATP/compiler/include/linkerscript_cortex.c
+      from http://github.com/wovo/bmptk/targets/cortex/
+      The original names of the files had bmptk in them. 
+      I just removed that part.
+      
+   ATP/compiler/include/arduino-due_system-sam3xa.inc
+   	

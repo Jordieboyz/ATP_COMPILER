@@ -1,9 +1,9 @@
-#ifndef _WAIT_H_
-#define _WAIT_H
+#ifndef _WAITAR_H_
+#define _WAITAR_H_
 
 #define register
 #include "include/cortex/atmel/sam.h"
-#include "include/hwlib-arduino-due-system-sam3xa.inc"
+#include "include/due-system-sam3xa.inc"
 #undef register
 
 /// returns the number of ticks since some fixed starting point

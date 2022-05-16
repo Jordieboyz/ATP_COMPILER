@@ -1,24 +1,21 @@
-#############################################################################
-#
-# Project Makefile
-#
-# (c) Wouter van Ooijen (www.voti.nl) 2016
-#
-# This file is in the public domain.
-# 
-#############################################################################
- 
-# source files in this project (main.cpp is automatically assumed)
-SOURCES := UART.cpp test.asm
+# makefile which links to a makefile with some arduino specific settings
+
+# SOURCES and HEADERS are used to build and compile the whole project
+# SEARCH are folders/paths where to find files
+# CLEAN is just for the cleanup 
+
+SOURCES += UART_due.cpp 
 
 # header files in this project
-HEADERS := UART.h waitable.h 
+HEADERS := UART_due.h 
+HEADERS += waitable.h 
 
-# other places to look for files for this project
-SEARCH  := UART
+# other places to lookzz for files for this project
+SEARCH  := UART 
+SEARCH += include
 
 CLEAN += .vscode
 CLEAN += __pycache__
 
 RELATIVE	      ?= ../
-include           $(RELATIVE)Makefile.inc
+include           $(RELATIVE)Makefile.ardue

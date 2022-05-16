@@ -1,7 +1,7 @@
-#include "UART/UART.h"
+#include "UART/UART_due.h"
 #include "waitable.h"
 
-DUE_UART * serial;
+UART_due * serial;
 
 extern "C" void putCharacter(char c){ serial->putc(c); }
 extern "C" void start();
@@ -9,7 +9,7 @@ extern "C" void start();
 int main( void ){	
    usleep( 10 );
 
-   DUE_UART uart;
+   UART_due uart;
    serial = &uart;
 
    start();

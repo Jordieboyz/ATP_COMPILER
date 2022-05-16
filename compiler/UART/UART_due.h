@@ -1,14 +1,14 @@
-#ifndef _UART_H_
-#define _UART_H_
+#ifndef _UART_DUE_H_
+#define _UART_DUE_H_
 
 #define __SAM3X8E__
 #define register
 #include "../include/cortex/atmel/sam.h"
 #undef register 
 
-class DUE_UART {
+class UART_due {
 public:
-   DUE_UART();
+   UART_due();
 
    void putc(char c);
 
@@ -18,4 +18,4 @@ private:
    Uart *due_uart = UART;
 };
 
-#endif // _UART_H_
+#endif // _UART_DUE_H_
