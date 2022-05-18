@@ -17,3 +17,4 @@ fi
 
 python3 main.py $INPUT_FILE $OUTPUT_FILE
 sudo make run PROJECT=$OUTPUT_FILE
+make clean PROJECT=$OUTPUT_FILE

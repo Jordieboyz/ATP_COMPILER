@@ -6,53 +6,50 @@
 #include "include/due-system-sam3xa.inc"
 #undef register
 
-/// returns the number of ticks since some fixed starting point
-uint_fast64_t now_ticks(){
-   static bool init_done = false;
-   if( ! init_done ){
-	   
-      // kill the watchdog
+//                   64 bits == curTicks
+//    40 bits == nRollOvers      24 bits == SysTick->VAL/curr 24 bits timer
+
+uint64_t getTickCount(){
+	static bool initialized;
+	if( ! initialized ){
+
+		// kill the watchdog
       WDT->WDT_MR = WDT_MR_WDDIS;
       
-      // switch to the 84 MHz crystal/PLL clock
-      sam3xa::SystemInit();
+      sam3xa::SystemInit();	         
       
-      EFC0->EEFC_FMR = EEFC_FMR_FWS(4);
-      EFC1->EEFC_FMR = EEFC_FMR_FWS(4);      
-      
-      SysTick->CTRL  = 0;         // stop the timer
-      SysTick->LOAD  = 0xFFFFFF;  // use its as a 24-bit timer
-      SysTick->VAL   = 0;         // clear the timer
-      SysTick->CTRL  = 5;         // start the timer, 1:1
-
-      init_done = true;      
-   }
+      SysTick->CTRL  = 0;                               // 0; "Pause" the timer
+      SysTick->LOAD  = SysTick_LOAD_RELOAD_Msk;   	     // 0xFFFFFF; load a 24 bits timer
+      SysTick->VAL   = SysTick_VAL_CURRENT_Msk;         // 0; clear the timer
+      SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |	  // 5; start the timer
+               SysTick_CTRL_TICKINT_Msk   |
+               SysTick_CTRL_ENABLE_Msk; 
+	
+		initialized = true;
+	}
+	
+   static uint32_t last_before_rollover = 0;
+   static uint64_t n_rollovers = 0; 
    
-   static unsigned int last_low = 0;
-   static unsigned long long int high = 0;
+   uint32_t timer_ticks = SysTick->VAL;
 
-   // the timer ticks down, but we want an up counter
-   unsigned int low = 0xFFFFFF - ( SysTick->VAL & 0xFFFFFF );
-   if( low < last_low ){
-   
-      // the timer rolled over, so increment the high part
-      high += 0x1ULL << 24;
+   // Timer counts down, so we should check if the timer rolled back to 0xFFFFFF
+   if(timer_ticks > last_before_rollover){
+      // Timer rolled over, so increment n_rollovers
+      n_rollovers += 1 << 24;
    }
-   last_low = low;
+   last_before_rollover = timer_ticks;
 
-   // return the aggregated ticks value
-   // the counter runs at 84 MHz 
-   return ( low | high ); 
+   // Timer is counting down, but we count the n_rollovers up, so we need to "reverse" the timer_ticks 
+   return ( (0xFFFFFF - (timer_ticks - 0xFFFFFF) ) | n_rollovers );
+}
 
-}   
 
-uint64_t now_us(){
-   return now_ticks() / 84;
-} 
-
-void usleep( int_fast32_t n ){
-   auto end = now_us() + n;
-   while( now_us() < end ){}
+void usleep( unsigned long us){
+	if(us == 0)
+		return;	
+	uint64_t start = getTickCount();
+	while(getTickCount() - start < us){}
 }
 
 

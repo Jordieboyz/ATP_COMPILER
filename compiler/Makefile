@@ -6,14 +6,14 @@
 
 SOURCES += UART_due.cpp 
 
-# header files in this project
 HEADERS := UART_due.h 
 HEADERS += waitable.h 
 
-# other places to lookzz for files for this project
+# paths to look for additional files in the project
 SEARCH  := UART 
 SEARCH += include
 
+# Clean these annoying folder automaticly created by python and vscode
 CLEAN += .vscode
 CLEAN += __pycache__
 

@@ -7,7 +7,7 @@ extern "C" void putCharacter(char c){ serial->putc(c); }
 extern "C" void start();
 
 int main( void ){	
-   usleep( 10 );
+   usleep( 1000 );
 
    UART_due uart;
    serial = &uart;
