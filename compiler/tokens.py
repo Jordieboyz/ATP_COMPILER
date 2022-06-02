@@ -14,7 +14,8 @@ tokendict : dict() = {
     '[' : lambda: StartExprLoop(),
     ']' : lambda: EndExprLoop(),
     '?' : lambda: StartIfStatement(),
-    '.' : lambda: Return()
+    '.' : lambda: Return(),
+    '~' : lambda: Print()
    }
 
 class Token:
@@ -70,6 +71,13 @@ class Is(Token):
         return self.__str__()
     
 class If(Token):
+    def __str__(self):
+        return type(self).__name__
+    
+    def __repr__(self):
+        return self.__str__()
+    
+class Print(Token):
     def __str__(self):
         return type(self).__name__
     

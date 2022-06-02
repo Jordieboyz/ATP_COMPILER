@@ -3,7 +3,7 @@
 
 UART_due * serial;
 
-extern "C" void putCharacter(char c){ serial->putc(c); }
+extern "C" void putCharacter(char c){ serial->putc('f'); }
 extern "C" void start();
 
 int main( void ){	

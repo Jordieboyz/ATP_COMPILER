@@ -1,8 +1,8 @@
 from typing import List
 from tokens import Token, Func, Number, Variable, Is, ExprIfStatement, \
-                   CloseFuncParam, OpenFuncParam, \
+                   CloseFuncParam, OpenFuncParam,  \
                    Add, Minus, Divide, Times, Modulo, OpenLoop, CloseLoop, \
-                   StartExprLoop, EndExprLoop, Return
+                   StartExprLoop, EndExprLoop, Return, Print
 from Statements import st_dict, Statement, Function, MathStatement, IfStatement, \
                         ReturnFunc, ConditionsLoop, Scope, CloseScope, OpenScope
 
@@ -57,6 +57,9 @@ def parseTokensToStatements(tokenlist : List[Token], statementlist : List[Statem
     elif isinstance( token, (Is, Add, Minus, Times, Divide, Modulo, ExprIfStatement) ):
         return parseTokensToStatements(rest, append(statementlist, st_dict[type(token)](last_token, token, None)), token, statementlist[-1])
     
+    elif isinstance( token, Print):
+        return parseTokensToStatements(rest, append(statementlist, st_dict[type(token)]()), token, None)
+        
     elif isinstance(token, (StartExprLoop, OpenLoop, CloseLoop)):
         return parseTokensToStatements(rest, append(statementlist, st_dict[type(token)]()), token, None)
     
@@ -99,3 +102,29 @@ def parseInScopes(statementlist : List[Statement], cur_scope : Scope):
 # Parse :: List[Token] -> String -> List[Statement]
 def Parse(tokenlist : List[Token]):
     return parseInScopes(parseTokensToStatements(tokenlist, [], None, None)[1], Scope())
+
+def get_func_def(func_decl : List, func_name : str ):
+    # This is absolutely not functional, I know, but I had a very hard time fixing it another way...
+    # this searches for the name of the func in the List::state.func_list[Tuple(String, List[Token])] to combine them.
+    # This is a very complicated line, but the function of it is pretty simple
+    
+    # In the "main" of this project, I "pre-compiled" my functions. I Lexed all my function declarations and combined that with a string (the name of the function) in a Tuple..
+    # So I could easily search for the declaration of a certain function and just this line combined the function the runner found with one of the "pre-compiled" functions.
+    f = list(filter(None, map( lambda x, y: x[1] if x[0] == y else None , func_decl, [func_name]*len(func_decl))))[0]
+    
+    # This is unfortunately needed...mosstly because I couldn't figure out a better way of fixing it.
+    # The "pre-compiled" functions all had one scope too much and the program couldn't work with that, so I had to 
+    # "manually" remove the outter loop (this is just to start the function scope).
+    if isinstance(f[4], OpenLoop):
+        del f[4]
+        if isinstance(f[-1], CloseLoop):
+            del f[-1]
+    
+    return Parse(f)[1]
+            
+            
+            
+            
+            
+            
+   

@@ -19,9 +19,11 @@ def make_list_for_func_declarations(func):
 def create_func_declarations(function_content):
     return list( re.finditer(r'func_ (\w+)', function_content ))
 
-FILE_NAME = sys.argv[1]
-OUTPUT_FILE_NAME = sys.argv[2]
+# FILE_NAME = sys.argv[1]
+# OUTPUT_FILE_NAME = sys.argv[2]
 
+FILE_NAME = "test_func01.txt"
+OUTPUT_FILE_NAME = "out.asm"
 
 content = reduce(lambda x, y: x + y, open(FILE_NAME, "r").readlines())
 
@@ -29,5 +31,5 @@ lexed = lex(content)
 
 _, parsed = Parse(lexed)
 
-# print( parsed.statements)
+
 compile_as(parsed.statements, create_func_declarations([], content.split('#')[1]), OUTPUT_FILE_NAME)

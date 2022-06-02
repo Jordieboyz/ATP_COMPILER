@@ -1,5 +1,5 @@
 from tokens import Token, Func, Number, Variable, Is, ExprIfStatement, \
-                   OpenFuncParam, \
+                   OpenFuncParam, Print, \
                    Add, Minus, Divide, Times, Modulo, OpenLoop, CloseLoop, \
                    StartExprLoop, Return
     
@@ -17,7 +17,8 @@ st_dict : dict() = {
     StartExprLoop     : lambda : ConditionsLoop(),
     Func              : lambda n : Function(n),
     Return            : lambda : ReturnFunc(),
-    OpenFuncParam     : lambda n : Function(n) 
+    OpenFuncParam     : lambda n : Function(n),
+    Print             : lambda : Output()
 }
     
 class Statement():
@@ -119,12 +120,8 @@ class ReturnFunc(Statement):
         return self.__str__()
 
 class Output(Statement):
-    def __init__(self):
-        self.rvalue = None
-        
     def __str__(self):
-        return "{} with: {}". \
-            format(type(self).__name__, self.rvalue)
+        return type(self).__name__
     
     def __repr__(self):
         return self.__str__()

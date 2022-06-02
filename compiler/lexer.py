@@ -33,7 +33,7 @@ def lex_it( file_string : str, tokenlist : List[Token], buff : str):
         buff += c  
     
     # Create Token if the current character is a Language Defined Character
-    elif c in r'=+-*()[]<>%$.':
+    elif c in r'=+-*()[]<>%$.~':
         if buff:
             tokenlist.append(Number(buff)) if buff[0].isnumeric()     \
                 else tokenlist.append(Variable(buff))
