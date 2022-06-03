@@ -77,13 +77,21 @@ def parseTokensToStatements(tokenlist : List[Token], statementlist : List[Statem
 # f.e. a loop, a function scope or just te scope for an if statement.
 # parseInScopes :: List[Statement] -> Scope -> List[Statement]
 def parseInScopes(statementlist : List[Statement], cur_scope : Scope):
+    
     if not statementlist:
         return None, cur_scope
-    
+
     statement, *rest = statementlist
     
+    if len(cur_scope.statements) > 1:
+        if isinstance(cur_scope.statements[-2], ConditionsLoop  ):
+            cur_scope.statements[-2].loop = cur_scope.statements[-1]
+            cur_scope.statements.remove(cur_scope.statements[-1])
+            
+            
     if isinstance( statement, CloseScope):
         return rest, cur_scope
+    
     
     elif isinstance( statement, (IfStatement, MathStatement)):
         if isinstance( statement.rvalue, Function):
@@ -93,10 +101,11 @@ def parseInScopes(statementlist : List[Statement], cur_scope : Scope):
     elif isinstance( statement, Function):
         newrest, newscope = parseInScopes(statement.func_scope, Scope(nest=cur_scope.nestlevel + 1))
         statement.func_scope = newscope
-        
+
     elif isinstance( statement, OpenScope ):
         newrest, newscope = parseInScopes(rest, Scope(nest=cur_scope.nestlevel + 1))
         return parseInScopes(newrest, cur_scope.add_statement(newscope))
+        
     return parseInScopes(rest, cur_scope.add_statement(statement))
  
 # Parse :: List[Token] -> String -> List[Statement]

@@ -4,13 +4,13 @@ from Statements import Function, MathStatement, IfStatement, \
                         ReturnFunc, ConditionsLoop, Scope, Output
 
 class cortex:
-    START_LABEL = '_start'
+    START_LABEL = 'start'
     
     class instructions:
         PUSH =      'push'
         POP =       'pop'
         BRANCHL =   'bl'
-        BRANCH =    lambda expr : str('b' + expr) if expr else 'b'
+        BRANCH =    lambda expr = None : str('b' + expr) if expr is not None else 'b'
         MOV =      'mov'
         STORE=      'str'
         CMP=        'cmp'
@@ -30,7 +30,7 @@ class cortex:
         LR = 'lr'
         PC = 'pc'
         
-       
+
 spacing = lambda part, s = ' ' : part+s
 imm = lambda  number: '#' + number
 reg = lambda reg : 'r' + reg
@@ -82,8 +82,10 @@ def start_compiling( ast, func_decl, var_list, label_name, routine_dict, last):
     statement, *rest = ast
 
     if label_name not in routine_dict:
-        routine_dict[label_name] = []
-    
+        if label_name[:3] == 'cl_':
+            routine_dict[label_name] = ["push { lr }"]
+        else:
+           routine_dict[label_name] = []
 
     # Use r0 as return-register. at the end of a fucntion, store the result in r0.
     if isinstance(statement, ReturnFunc):
@@ -143,14 +145,8 @@ def start_compiling( ast, func_decl, var_list, label_name, routine_dict, last):
                                             )
 
 
-
-  
-   
-        
-        
-    # perform an cmparisson which will update the flags.        
+    # perform an comparisson which will update the flags.        
     elif isinstance( statement, IfStatement):
-        print(statement)
         if isinstance( statement.lvalue, Variable):
             if isinstance( statement.rvalue, Number):
                 routine_dict[label_name].append(
@@ -162,15 +158,10 @@ def start_compiling( ast, func_decl, var_list, label_name, routine_dict, last):
                                                 )
                 last = statement
            
-    
-
     # perform a mathimatical instruction
     elif isinstance( statement, MathStatement):
-        
         if isinstance( statement.rvalue, Number):
             if isinstance( statement.operator, Minus):
-                # print(statement.lvalue.content)
-                # print(label_name)
                 if statement.lvalue.content in var_list:
 
                     routine_dict[label_name].append(
@@ -231,57 +222,57 @@ def start_compiling( ast, func_decl, var_list, label_name, routine_dict, last):
                                                         reg(str((var_list.index(statement.rvalue.content))))
                                                 )
                                         )
-        
-        
-    # Create a new scope and so a  new label for f.e. a subroutine
-    elif isinstance(statement, Scope):
-        if isinstance(last, ConditionsLoop):
-            
-                routine_dict[label_name].append(
+            elif isinstance( statement.operator, Minus):
+                    routine_dict[label_name].append(
                                                 get_instruction_string(
-                                                        cortex.instructions.BRANCH(last.expr.operator.expr),
-                                                        ".rt_" + str(len(routine_dict))
-                                                        )
+                                                        cortex.instructions.SUB,
+                                                        reg(str((var_list.index(statement.lvalue.content)))),
+                                                        reg(str((var_list.index(statement.rvalue.content))))
                                                 )
-   
-                start_compiling(statement.statements, func_decl, var_list, ".rt_" + str(len(routine_dict)), routine_dict, statement)
+                                        )
         
         
-        if isinstance(last, IfStatement):
-            c = ".ret_" + str(len(routine_dict))
-            routine_dict[label_name].append(
-                                            get_instruction_string(
-                                                    cortex.instructions.BRANCH(last.operator.expr),
-                                                    c
-                                                    )
-                                            )
-            #TODO: FIX TRHIS PLEASE, THIS HURTS      
-            start_compiling(statement.statements, func_decl, var_list, c, routine_dict, last)
-            if routine_dict[c][-1] == "pop { pc }":
-                routine_dict[c][-1] = "b condL"
-
     elif isinstance( statement, ConditionsLoop):
         routine_dict[label_name].append(
                                         get_instruction_string(
                                                 cortex.instructions.BRANCHL,
-                                                "condL"
+                                                "cl_" + str(len(routine_dict))
                                                 )
                                         )
+        start_compiling([statement.expr, statement.loop], func_decl, var_list, "cl_" + str(len(routine_dict)), routine_dict, statement)
+
+
         
-        if "condL" not in routine_dict:
-            routine_dict["condL"] = ["push { lr }"]
         
-        start_compiling([statement.expr, rest[0]], func_decl, var_list, "condL", routine_dict, statement)
-        rest = rest[1:]
+    # Create a new scope and so a  new label for f.e. a subroutine
+    elif isinstance(statement, Scope):
+        if isinstance(last, IfStatement):
+            routine_dict[label_name].append(
+                                            get_instruction_string(
+                                                    cortex.instructions.BRANCH(last.operator.expr[:2]),
+                                                    ".rt_" + str(len(routine_dict))
+                                                    )
+                                            )
+            start_compiling(statement.statements, func_decl, var_list, ".rt_" + str(len(routine_dict)), routine_dict, last)
+            rt_label = ".rt_" + str(len(routine_dict)-1)
+            if label_name[:3] == 'cl_':
+                if routine_dict[rt_label][-1] == "pop { pc }":
+                    routine_dict[rt_label].remove(routine_dict[rt_label][-1])
+                    routine_dict[rt_label].append(
+                                                    get_instruction_string(
+                                                            cortex.instructions.BRANCH(),
+                                                            label_name
+                                                            )
+                                                    )
+
     
     return start_compiling(rest, func_decl, var_list, label_name, routine_dict, statement)
     
 
-    
 # essentially we just return the amount of global variables so we know what registers to safen
 def get_reg_init_string( ast, reg_list, push_str = " " ):
     if not ast:
-        return push_str
+        return "push {" + push_str + " lr }"
     
     statement, *rest = ast
     
@@ -313,7 +304,7 @@ def compile_as(ast, func_decl, filename):
                         ["", "", "", ""],             \
                         cortex.START_LABEL,                                           \
                         { "init" : [],                                       \
-                             cortex.START_LABEL : ["push {" + get_reg_init_string(ast, ["", "", "", ""]) + " lr }"] }, \
+                             cortex.START_LABEL : [get_reg_init_string(ast, ["", "", "", ""])] }, \
                         None)
     
     routine_dict["init"].append(".global " + cortex.START_LABEL)

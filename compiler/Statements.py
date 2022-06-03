@@ -86,10 +86,11 @@ class Function(Statement):
 class ConditionsLoop(Statement):
     def __init__(self):
         self.expr = None
+        self.loop = []
         
     def __str__(self):
-        return "{} with: {}". \
-            format(type(self).__name__, self.expr)
+        return "{} with: {} with scope:  {}". \
+            format(type(self).__name__, self.expr, self.loop)
     
     def __repr__(self):
         return self.__str__()
