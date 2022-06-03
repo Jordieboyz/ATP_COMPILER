@@ -27,6 +27,7 @@ UART_due::UART_due(){
 
     // Enable the receiver and the trasmitter.
     due_uart->UART_CR = UART_CR_RXEN | UART_CR_TXEN;
+
 }
 
 void UART_due::putc(char c){
@@ -34,6 +35,8 @@ void UART_due::putc(char c){
     while((due_uart->UART_SR & UART_SR_TXRDY) == 0){};
     due_uart->UART_THR = c;
 }
+
+
 
 char UART_due::getc(void){
     // wait until at least one complete character is received
