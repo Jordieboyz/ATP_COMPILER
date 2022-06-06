@@ -7,6 +7,7 @@ vpath %.asm  $(SEARCH)
 vpath %.c    $(SEARCH)
 vpath %.cpp  $(SEARCH)
 
+
 #============================================================================
 #
 # LANGUAGE FLAGS
@@ -18,7 +19,8 @@ COMMON        += -Wno-maybe-uninitialized -Wno-unused-local-typedefs -Wno-unused
 COMMON        += -Os
 COMMON        += -fdata-sections -ffunction-sections
 COMMON        += $(foreach x, $(SEARCH), -I$(x))
-
+COMMON 	+= $(TESTDEF) 
+	
 # add C++-specific flags
 CPP_FLAGS     := -std=c++17
 CPP_FLAGS     += -fno-rtti

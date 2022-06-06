@@ -1,7 +1,7 @@
-k=20
+k=9
 
 
-.sommig(k)~
+.sommig(k)
 
 # 
 

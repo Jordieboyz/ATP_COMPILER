@@ -140,7 +140,7 @@ def start_compiling( ast, func_decl, var_list, label_name, routine_dict, last):
             routine_dict[label_name].append(
                                             get_instruction_string( 
                                                     cortex.instructions.BRANCHL, 
-                                                    'putCharacter'
+                                                    'putNumber'
                                                     )
                                             )
 

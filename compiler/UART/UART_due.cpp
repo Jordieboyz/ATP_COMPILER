@@ -14,7 +14,7 @@ UART_due::UART_due(){
     PMC->PMC_PCER0 = ( 0x01 << ID_UART );
 
     // Reset and disable receiver and transmitter.
-    due_uart->UART_CR = UART_CR_RSTRX | UART_CR_RSTTX | UART_CR_RXDIS | UART_CR_TXDIS;
+    due_uart->UART_CR = UART_CR_RSTTX | UART_CR_TXDIS;
 
     // Set the baudrate to 115200.
     due_uart->UART_BRGR = 5241600 / 115200; 
@@ -26,7 +26,7 @@ UART_due::UART_due(){
     due_uart->UART_IDR = 0xFFFFFFFF;   
 
     // Enable the receiver and the trasmitter.
-    due_uart->UART_CR = UART_CR_RXEN | UART_CR_TXEN;
+    due_uart->UART_CR = UART_CR_TXEN;
 
 }
 
@@ -34,12 +34,4 @@ void UART_due::putc(char c){
     // wait until no character has been written to UART_THR (or not yet transferred to the Shift Register)
     while((due_uart->UART_SR & UART_SR_TXRDY) == 0){};
     due_uart->UART_THR = c;
-}
-
-
-
-char UART_due::getc(void){
-    // wait until at least one complete character is received
-    while((due_uart->UART_SR & UART_SR_RXRDY) == 0){};
-    return due_uart->UART_RHR;
 }
