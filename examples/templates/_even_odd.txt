@@ -1,0 +1,16 @@
+n = ?
+.even(n)
+
+# 
+
+func_ odd(number)>
+    number  $eq 0 > .0 <
+    number - 1 
+    .even(number)
+<
+
+func_ even(number)>
+    number $eq 0 > .1 < 
+    number - 1
+    .odd( number)
+<

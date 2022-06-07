@@ -1,36 +1,23 @@
-#! /bin/sh
+#! /bin/sh 
 
-INPUT_FILE=$1
-OUTPUT_FILE=$2
-
-if [ -z "$1" ]
-then
-    echo "No input file given!"
-    exit
-fi
-
-if [ -z "$2" ]
-then
-	echo "No output file name given... using $(basename $INPUT_FILE .txt).asm"
-	OUTPUT_FILE=$(basename $INPUT_FILE .txt).asm
-fi	
-
-# make tests out of C++
-
-
-
-
-python3 main.py $INPUT_FILE $OUTPUT_FILE
-
-if [ -s $(readlink -f $OUTPUT_FILE) ]; then
-	echo ""$OUTPUT_FILE" succesfully created!"
-else
-	echo "Something went wrong. No output file created!"
+RUN_TEST_PATH=tests/create_tests
+if [ ! -f "$RUN_TEST_PATH" ]; then
+	g++ -o $RUN_TEST_PATH -Wall -Werror $RUN_TEST_PATH.cpp
+	./$RUN_TEST_PATH
+	echo "Created test files! Run the program with again the wanted test to run."
 	exit
+else
+	./$RUN_TEST_PATH
+	echo "Created test files! Run the program with again the wanted test to run."
 fi
 
-# g++ -o output -Wall -Werror create_tests.cpp
+for entry in tests/*.tst; do
+	python3 main.py $entry $(basename $entry .tst).asm
+	echo "Created: $(basename $entry .tst).asm"
+done
+ 
+for entry in *.asm; do
+	sudo make run PROJECT=$entry TESTDEF=-D$(basename $entry .asm)
+	make clean
+done
 
-
-sudo make run PROJECT=$OUTPUT_FILE TESTDEF=-D$(basename $INPUT_FILE .txt)
-make clean PROJECT=$OUTPUT_FILE

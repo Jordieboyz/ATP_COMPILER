@@ -55,25 +55,25 @@ $(OBJECTS): $(DEPENDENCIES)
 
 # How to make an object file from an assembler file
 %.o: %.asm
-	@echo 'Assembling (.asm) file: $<'
+#	@echo 'Assembling (.asm) file: $<'
 	@echo $(COMMON) > _common_flags
 	"arm-none-eabi-gcc" @_common_flags -x assembler-with-cpp -c -o $@ $<
-	@echo ' '
+#	@echo ' '
 
 # How to make an object file from a C file
 %.o: %.c
-	@echo 'Compiling C (.c) file: $<'
+#	@echo 'Compiling C (.c) file: $<'
 	@echo $(COMMON) > _common_flags
 	"arm-none-eabi-gcc" @_common_flags -std=c11 -c -o $@ $<
-	@echo ' '
+#	@echo ' '
 
 # How to make an object file from a C++ file (.cpp)
 %.o: %.cpp
-	@echo 'Compiling C++ (.cpp) file: $<'
+#	@echo 'Compiling C++ (.cpp) file: $<'
 	@echo $(COMMON) > _common_flags
 	@echo $(CPP_FLAGS) > _cpp_flags
 	"arm-none-eabi-g++" @_common_flags @_cpp_flags -c -o $@ $<
-	@echo ' '
+#	@echo ' '
 
 
 #=========================================================================
@@ -88,14 +88,14 @@ LD_CONFIG    += -DRAM_START=0x20070000 -DRAM_SIZE=96k
 # How to make a linkerscipt by preprocessing a .c linkerfile template
 main.ld: $(CORTEX_LD)
 	"arm-none-eabi-gcc" $(LD_CONFIG) -E -P -C $< -o $@
-	@echo ' '
+#	@echo ' '
 	
 
 # make .elf by linking all objects
 main.elf: $(addprefix ./,$(OBJECTS)) main.ld 
 	@echo $(LN_FLAGS) > _linker_flags
 	"arm-none-eabi-g++" @_common_flags @_linker_flags -o $@ $(OBJECTS)  -nostdlib -nodefaultlibs -nostartfiles -lm -lgcc -lc -T main.ld -Iinclude/cortex/atmel/sam3xa/source/as_gcc
-	@echo ' '
+#	@echo ' '
 	
 # How to make a .bin file from an .elf file
 main.bin: main.elf
@@ -130,6 +130,8 @@ run: main $(LPC21ISP_EXE) $(BOSSAC)
 	-$(SUDO) $(BOSSAC) --port=$(subst /dev/,,$(SERIAL_PORT)) --force_usb_port=false -e -w -v -b main.bin -R
 	$(SUDO) $(LPC21ISP_EXE) -termonly -term main.hex $(SERIAL_PORT) 115200 12000
 
+cleanall:
+	rm -rf *.o *.asm $(CLEAN) tests/*.tst tests/create_tests
 clean:
 	rm -rfd $(CLEAN)
 	@echo ' '
