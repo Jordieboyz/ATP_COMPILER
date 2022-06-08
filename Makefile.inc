@@ -14,6 +14,15 @@ vpath %.cpp  $(SEARCH)
 #
 #============================================================================
 
+TESTSDIR=tests
+TESTDEF := $(addprefix '-D_', $(basename $(subst $(TESTSDIR)/,,$(shell find tests -name "*.asm")) .asm ))
+
+info:
+	@echo '$(TESTDEF)'
+		
+
+	
+	
 COMMON        += -Wall -Werror
 COMMON        += -Wno-maybe-uninitialized -Wno-unused-local-typedefs -Wno-unused-but-set-variable -Wno-unused-function -Wno-attributes
 COMMON        += -Os
@@ -23,7 +32,7 @@ COMMON 	+= $(TESTDEF)
 	
 # add C++-specific flags
 CPP_FLAGS     := -std=c++17
-CPP_FLAGS     += -fno-rtti
+CPP_FLAGS     += -fno-rtti -fconcepts
 CPP_FLAGS     += -fno-exceptions -fno-asynchronous-unwind-tables
 CPP_FLAGS     += -fno-threadsafe-statics
 CPP_FLAGS     += -fno-use-cxa-get-exception-ptr -fno-use-cxa-atexit
@@ -70,6 +79,7 @@ $(OBJECTS): $(DEPENDENCIES)
 # How to make an object file from a C++ file (.cpp)
 %.o: %.cpp
 #	@echo 'Compiling C++ (.cpp) file: $<'
+	@echo $(TESTDEF)
 	@echo $(COMMON) > _common_flags
 	@echo $(CPP_FLAGS) > _cpp_flags
 	"arm-none-eabi-g++" @_common_flags @_cpp_flags -c -o $@ $<
@@ -122,7 +132,7 @@ SERIAL_PORT	?= $(shell ls /dev/ttyACM?)
 LPC21ISP_EXE	?= include/tools/lpc21isp_197/lpc21isp_hr_linux.exe
 BOSSAC 	?= include/tools/BOSSA-Arduino/bin/bossac
 
-.PHONY: main run clean
+.PHONY: main run clean info
 	
 main: main.bin
 run: main $(LPC21ISP_EXE) $(BOSSAC) 
@@ -131,7 +141,7 @@ run: main $(LPC21ISP_EXE) $(BOSSAC)
 	$(SUDO) $(LPC21ISP_EXE) -termonly -term main.hex $(SERIAL_PORT) 115200 12000
 
 cleanall:
-	rm -rf *.o *.asm $(CLEAN) tests/*.tst tests/create_tests
+	rm -f *.o tests/*.asm *.asm $(CLEAN) tests/*.tst
 clean:
 	rm -rfd $(CLEAN)
 	@echo ' '

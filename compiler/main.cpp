@@ -1,15 +1,26 @@
 #include "UART/UART_due.h"
 #include "waitable.h"
 
-// This is kinda ugly, but ti is the only way for me to properly use the UART::putc in these functions.
 UART_due * serial;
 
-// This is the entry point of the program and start label of the asm program.
-// extern "C" uint8_t start(uint8_t r0, uint8_t r1, uint8_t r2, uint8_t r3);
-extern "C" uint16_t start();
+extern "C" uint8_t t0_even_odd();
+extern "C" uint8_t t1_even_odd();
 
-// For the right output, we need to turn the char into an integer.
-// This is annoying if ( c < 0 && c > 9 ).
+extern "C" uint8_t t2_add_imm();
+extern "C" uint8_t t3_add_imm();
+extern "C" uint8_t t4_add_regs();
+extern "C" uint8_t t5_add_regs();
+
+extern "C" uint8_t t6_minus_imm();
+extern "C" uint8_t t7_minus_imm();
+extern "C" uint8_t t8_minus_regs();
+extern "C" uint8_t t9_minus_regs();
+
+extern "C" uint8_t t10_sommig();
+extern "C" uint8_t t11_sommig();
+extern "C" uint8_t t12_sommig();
+
+
 extern "C" void putNumber( uint8_t c){ 
    if( c >= 0 && c <= 9){
       serial->putc( c + '0');
@@ -24,6 +35,7 @@ extern "C" void putNumber( uint8_t c){
    serial->putc('\n');
 }
 
+
 // making my life easier to print a whole string of characters
 void put_string(const char * str, bool endl = true){
    while( *str )
@@ -32,48 +44,84 @@ void put_string(const char * str, bool endl = true){
       serial->putc('\n');
 }
 
-// C++ implementations and checks for unit tests
-auto cpp_even = [](int b){ return( b % 2 == 0);};
-auto cpp_add = [](int a, int b){ return( a + b);};
-auto cpp_minus = [](int a, int b){ return( a - b);};
-int cpp_sommig(int n){
-   if( n > 1)
-      return n + cpp_sommig( n-1 );
-   return 1;
-}
 
 #define UNIT_TESTS
-#ifdef UNIT_TESTS        
-   #if defined (t0_even_odd)
-      bool perform_test(){ return ( start() == cpp_even(3)     );} 
-   #elif defined (t1_even_odd)
-      bool perform_test(){ return ( start() == cpp_even(6)     );}  
-   #elif defined (t2_add_imm)
-      bool perform_test(){ return ( start() == cpp_add(3, 7)   );}
-   #elif defined (t3_add_imm)
-      bool perform_test(){ return ( start() == cpp_add(2, 9)   );}
-   #elif defined (t4_add_regs)
-      bool perform_test(){ return ( start() == cpp_add(4, 8)   );}
-   #elif defined (t5_add_regs)
-      bool perform_test(){ return ( start() == cpp_add(9, 9)   );}   
-   #elif defined (t6_minus_imm)
-      bool perform_test(){ return ( start() == cpp_minus(23, 4)   );}
-   #elif defined (t7_minus_imm)
-      bool perform_test(){ return ( start() == cpp_minus(15, 11)   );}
-   #elif defined (t8_minus_regs)
-      bool perform_test(){ return ( start() == cpp_minus(42, 6)   );}
-   #elif defined (t9_minus_regs)
-      bool perform_test(){ return ( start() == cpp_minus(23, 15)   );}   
-   #elif defined (t10_sommig)
-      bool perform_test(){ return ( start() == cpp_sommig(7)    );}              
-   #elif defined (t11_sommig)
-      bool perform_test(){ return ( start() == cpp_sommig(17)   );}             
-   #elif defined (t12_sommig)
-      bool perform_test(){ return ( start() == cpp_sommig(24)  );}             
-   #else
-      bool perform_test(){ return false; }
-   #endif
+#ifdef UNIT_TESTS 
+   int passed = 0;
+   int failed = 0;
+
+   // C++ implementations and checks for unit tests
+   auto cpp_even = [](int b){ return( (int)(b % 2 == 0));};
+   auto cpp_add = [](int a, int b){ return( a + b);};
+   auto cpp_minus = [](int a, int b){ return( a - b);};
+   int cpp_sommig(int n){
+      if( n > 1)
+         return n + cpp_sommig( n-1 );
+      return 1;
+   }
+
+   void check_test_one_param( uint8_t p, int (*check)(int), int a ){
+      if( p == check(a) )
+         passed++;
+      else
+         failed++;
+   };  
+
+   void check_test_two_param( uint8_t p, int (*check2)(int, int), int a, int b ){
+      if( p == check2(a, b) )
+         passed++;
+      else
+         failed++;
+   }; 
+
+   void perform_tests(){
+      #ifdef _t0_even_odd
+         check_test_one_param( ((uint8_t )(*t0_even_odd)()), cpp_even, 3); 
+      #endif
+      #ifdef _t1_even_odd
+         check_test_one_param( ((uint8_t )(*t1_even_odd)()), cpp_even, 6); 
+      #endif  
+      #ifdef _t2_add_imm
+         check_test_two_param( ((uint8_t )(*t2_add_imm)()), cpp_add, 3, 7); 
+      #endif  
+      #ifdef _t3_add_imm
+         check_test_two_param( ((uint8_t )(*t3_add_imm)()), cpp_add, 2, 9); 
+      #endif 
+      #ifdef _t4_add_regs 
+         check_test_two_param( ((uint8_t )(*t4_add_regs)()), cpp_add, 4, 8); 
+      #endif 
+      #ifdef _t5_add_regs
+         check_test_two_param( ((uint8_t )(*t5_add_regs)()), cpp_add, 9, 9);
+      #endif 
+      #ifdef _t6_minus_imm
+         check_test_two_param( ((uint8_t )(*t6_minus_imm)()), cpp_minus, 23, 4);
+      #endif
+      #ifdef _t7_minus_imm
+         check_test_two_param( ((uint8_t )(*t7_minus_imm)()), cpp_minus, 15, 11);
+      #endif
+      #ifdef _t8_minus_regs
+         check_test_two_param( ((uint8_t )(*t8_minus_regs)()), cpp_minus, 42, 6);
+      #endif
+      #ifdef _t9_minus_regs
+         check_test_two_param( ((uint8_t )(*t9_minus_regs)()), cpp_minus, 23, 15);
+      #endif
+      #ifdef _t10_sommig
+         check_test_one_param( ((uint8_t )(*t10_sommig)()), cpp_sommig, 7);
+      #endif
+      #ifdef _t11_sommig
+         check_test_one_param( ((uint8_t )(*t11_sommig)()), cpp_sommig, 17);
+      #endif
+      #ifdef _t12_sommig
+         check_test_one_param( ((uint8_t )(*t12_sommig)()), cpp_sommig, 24);
+      #endif
+
+      put_string( "Unit test passed succesfully: ", false );
+      putNumber( passed );
+      put_string( "Unit test failed: ", false );
+      putNumber( failed );
+   }
 #endif
+
 
 int main( void ){
    
@@ -82,11 +130,8 @@ int main( void ){
    UART_due uart;
    serial = &uart;
 
-   #ifdef UNIT_TESTS
-      if( perform_test() == true )
-         put_string( "Unit test passed succesfully." );
-      else 
-         put_string( "Unit test failed." );
+   #ifdef UNIT_TESTS 
+      perform_tests();
    #endif
 
    return 1;

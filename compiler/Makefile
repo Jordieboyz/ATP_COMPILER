@@ -4,6 +4,8 @@
 # SEARCH are folders/paths where to find files
 # CLEAN is just for the cleanup 
 
+
+SOURCES := $(wildcard tests/*.asm)
 SOURCES += UART_due.cpp 
 
 HEADERS := UART_due.h 
@@ -13,12 +15,5 @@ HEADERS += waitable.h
 SEARCH  := UART 
 SEARCH += include
 
-# Clean these annoying folder automaticly created by python and vscode
-CLEAN += .vscode
-CLEAN += __pycache__
-
-
-
-# CLEAN += tests/create_tests
 RELATIVE	      ?= ../
 include           $(RELATIVE)Makefile.ardue

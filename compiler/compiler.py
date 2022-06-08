@@ -302,12 +302,12 @@ def compile_as(ast, func_decl, filename):
                         ast, 
                         func_decl,          \
                         ["", "", "", ""],             \
-                        cortex.START_LABEL,                                           \
+                        filename[filename.index('/')+1:-4],                                           \
                         { "init" : [],                                       \
-                             cortex.START_LABEL : [get_reg_init_string(ast, ["", "", "", ""])] }, \
+                             filename[filename.index('/')+1:-4] : [get_reg_init_string(ast, ["", "", "", ""])] }, \
                         None)
     
-    routine_dict["init"].append(".global " + cortex.START_LABEL)
+    routine_dict["init"].append(".global " + filename[filename.index('/')+1:-4])
     routine_dict["init"].append(".text")
     routine_dict["init"].append(".cpu cortex-m0")
     routine_dict["init"].append(".align 2")
