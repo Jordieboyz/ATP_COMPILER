@@ -3,24 +3,6 @@
 
 UART_due * serial;
 
-extern "C" uint8_t t0_even_odd();
-extern "C" uint8_t t1_even_odd();
-
-extern "C" uint8_t t2_add_imm();
-extern "C" uint8_t t3_add_imm();
-extern "C" uint8_t t4_add_regs();
-extern "C" uint8_t t5_add_regs();
-
-extern "C" uint8_t t6_minus_imm();
-extern "C" uint8_t t7_minus_imm();
-extern "C" uint8_t t8_minus_regs();
-extern "C" uint8_t t9_minus_regs();
-
-extern "C" uint8_t t10_sommig();
-extern "C" uint8_t t11_sommig();
-extern "C" uint8_t t12_sommig();
-
-
 extern "C" void putNumber( uint8_t c){ 
    if( c >= 0 && c <= 9){
       serial->putc( c + '0');
@@ -44,9 +26,9 @@ void put_string(const char * str, bool endl = true){
       serial->putc('\n');
 }
 
-
-#define UNIT_TESTS
 #ifdef UNIT_TESTS 
+   #include "include_tests.h"
+   
    int passed = 0;
    int failed = 0;
 

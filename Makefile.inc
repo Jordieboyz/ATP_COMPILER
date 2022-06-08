@@ -7,6 +7,12 @@ vpath %.asm  $(SEARCH)
 vpath %.c    $(SEARCH)
 vpath %.cpp  $(SEARCH)
 
+TESTSDIR=tests
+TESTDEF := -DUNIT_TESTS
+TESTDEF += $(addprefix '-D_', $(basename $(subst $(TESTSDIR)/,,$(shell find tests -name "*.asm")) .asm ))
+
+EXTERNS=  $(foreach name,$(basename $(subst $(TESTSDIR)/,,$(shell find tests -name "*.asm")) .asm ), $(subst @, $(name), extern "C" uint8_t@(); ) ) 
+	
 
 #============================================================================
 #
@@ -14,15 +20,6 @@ vpath %.cpp  $(SEARCH)
 #
 #============================================================================
 
-TESTSDIR=tests
-TESTDEF := $(addprefix '-D_', $(basename $(subst $(TESTSDIR)/,,$(shell find tests -name "*.asm")) .asm ))
-
-info:
-	@echo '$(TESTDEF)'
-		
-
-	
-	
 COMMON        += -Wall -Werror
 COMMON        += -Wno-maybe-uninitialized -Wno-unused-local-typedefs -Wno-unused-but-set-variable -Wno-unused-function -Wno-attributes
 COMMON        += -Os
@@ -64,26 +61,22 @@ $(OBJECTS): $(DEPENDENCIES)
 
 # How to make an object file from an assembler file
 %.o: %.asm
-#	@echo 'Assembling (.asm) file: $<'
+	@echo '$(EXTERNS)' > include_tests.h  
 	@echo $(COMMON) > _common_flags
 	"arm-none-eabi-gcc" @_common_flags -x assembler-with-cpp -c -o $@ $<
-#	@echo ' '
 
 # How to make an object file from a C file
 %.o: %.c
-#	@echo 'Compiling C (.c) file: $<'
 	@echo $(COMMON) > _common_flags
 	"arm-none-eabi-gcc" @_common_flags -std=c11 -c -o $@ $<
-#	@echo ' '
+
 
 # How to make an object file from a C++ file (.cpp)
 %.o: %.cpp
-#	@echo 'Compiling C++ (.cpp) file: $<'
-	@echo $(TESTDEF)
 	@echo $(COMMON) > _common_flags
 	@echo $(CPP_FLAGS) > _cpp_flags
 	"arm-none-eabi-g++" @_common_flags @_cpp_flags -c -o $@ $<
-#	@echo ' '
+
 
 
 #=========================================================================
@@ -135,13 +128,13 @@ BOSSAC 	?= include/tools/BOSSA-Arduino/bin/bossac
 .PHONY: main run clean info
 	
 main: main.bin
-run: main $(LPC21ISP_EXE) $(BOSSAC) 
+run: main $(LPC21ISP_EXE) $(BOSSAC)
 	$(SUDO) stty -F $(SERIAL_PORT) speed 1200 cs8 -cstopb -parenb; sleep 1.0
 	-$(SUDO) $(BOSSAC) --port=$(subst /dev/,,$(SERIAL_PORT)) --force_usb_port=false -e -w -v -b main.bin -R
 	$(SUDO) $(LPC21ISP_EXE) -termonly -term main.hex $(SERIAL_PORT) 115200 12000
 
 cleanall:
-	rm -f *.o tests/*.asm *.asm $(CLEAN) tests/*.tst
+	rm -f *.o tests/*.asm tests/create_tests *.asm $(CLEAN) tests/*.tst include_tests.h
 clean:
 	rm -rfd $(CLEAN)
 	@echo ' '
