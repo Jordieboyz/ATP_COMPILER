@@ -4,9 +4,6 @@
 # SEARCH are folders/paths where to find files
 # CLEAN is just for the cleanup 
 
-
-
-
 SOURCES := $(wildcard tests/*.asm)
 SOURCES += UART_due.cpp 
 
@@ -15,7 +12,7 @@ HEADERS += waitable.h
 
 # paths to look for additional files in the project
 SEARCH  := UART 
-SEARCH += include
+SEARCH 	+= include
 
 RELATIVE	      ?= ../
 include           $(RELATIVE)Makefile.ardue

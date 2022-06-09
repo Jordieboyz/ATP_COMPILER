@@ -114,6 +114,8 @@ main.bin: main.elf
 CLEAN		+= _common_flags _linker_flags _cpp_flags
 CLEAN   	+= main.ld main.bin main.elf
 CLEAN        	+= $(OBJECTS)
+CLEAN 		+= .vscode
+CLEAN 		+= __pycache__
 
 #============================================================================
 #
@@ -134,7 +136,7 @@ run: main $(LPC21ISP_EXE) $(BOSSAC)
 	$(SUDO) $(LPC21ISP_EXE) -termonly -term main.hex $(SERIAL_PORT) 115200 12000
 
 cleanall:
-	rm -f *.o tests/*.asm tests/create_tests *.asm $(CLEAN) tests/*.tst include_tests.h
+	rm -rfd *.o tests/*.asm tests/create_tests *.asm $(CLEAN) tests/*.tst include_tests.h
 clean:
 	rm -rfd $(CLEAN)
 	@echo ' '

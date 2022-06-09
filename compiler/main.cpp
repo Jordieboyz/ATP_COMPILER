@@ -1,9 +1,30 @@
 #include "UART/UART_due.h"
 #include "waitable.h"
 
+
+/** format!
+ * @brief
+ *  Dithers a binary image with the selected dither filter.
+ * @details
+ *  This functions attempts to dither the image with the
+ *  selected filter, the size of the data part of the output
+ *  image should at least 1/8 of the number of pixels.
+ * @param
+ *   @param int z    blablabla
+ *   @param int w    blablabla
+ * @retval
+ *  returns 0 if success, 
+ *  -EINVAL if dither filter is not available,
+ *  -EOVERFLOW if provided output image is to small te contain data.
+ */
+
+
+// A global UART_due instance. 
+// This makes calling the UART_due::putc possible witout intializing the UART_due every time
 UART_due * serial;
 
-extern "C" void putNumber( uint8_t c){ 
+// put_number output the actual number (max 3 digits), not the "ascii-table-value"
+extern "C" void put_number( uint8_t c){ 
    if( c >= 0 && c <= 9){
       serial->putc( c + '0');
    } else if( c >= 10 && c <= 99){
@@ -17,7 +38,6 @@ extern "C" void putNumber( uint8_t c){
    serial->putc('\n');
 }
 
-
 // making my life easier to print a whole string of characters
 void put_string(const char * str, bool endl = true){
    while( *str )
@@ -29,27 +49,22 @@ void put_string(const char * str, bool endl = true){
 #ifdef UNIT_TESTS 
    #include "include_tests.h"
    
+   // global variables to keep tracks of the passed or failed tests.
    int passed = 0;
    int failed = 0;
 
-   // C++ implementations and checks for unit tests
-   auto cpp_even = [](int b){ return( (int)(b % 2 == 0));};
-   auto cpp_add = [](int a, int b){ return( a + b);};
-   auto cpp_minus = [](int a, int b){ return( a - b);};
-   int cpp_sommig(int n){
-      if( n > 1)
-         return n + cpp_sommig( n-1 );
+   // C++ implementations of certain functions and checks for unit tests
+   auto cpp_even =  [](int a, int b){ return (int)(b % 2 == 0) ;};
+   auto cpp_add =   [](int a, int b){ return a + b;};
+   auto cpp_minus = [](int a, int b){ return a - b;};
+   int cpp_sommig(int a, int b){
+      if( a > 1)
+         return a + cpp_sommig( a - 1, b );
       return 1;
    }
 
-   void check_test_one_param( uint8_t p, int (*check)(int), int a ){
-      if( p == check(a) )
-         passed++;
-      else
-         failed++;
-   };  
 
-   void check_test_two_param( uint8_t p, int (*check2)(int, int), int a, int b ){
+   void check_test( uint8_t p, int (*check2)(int, int), int a, int b = -1 ){
       if( p == check2(a, b) )
          passed++;
       else
@@ -58,56 +73,55 @@ void put_string(const char * str, bool endl = true){
 
    void perform_tests(){
       #ifdef _t0_even_odd
-         check_test_one_param( ((uint8_t )(*t0_even_odd)()), cpp_even, 3); 
+         check_test( ((uint8_t )(*t0_even_odd)()), cpp_even, 3); 
       #endif
       #ifdef _t1_even_odd
-         check_test_one_param( ((uint8_t )(*t1_even_odd)()), cpp_even, 6); 
+         check_test( ((uint8_t )(*t1_even_odd)()), cpp_even, 6); 
       #endif  
       #ifdef _t2_add_imm
-         check_test_two_param( ((uint8_t )(*t2_add_imm)()), cpp_add, 3, 7); 
+         check_test( ((uint8_t )(*t2_add_imm)()), cpp_add, 3, 7); 
       #endif  
       #ifdef _t3_add_imm
-         check_test_two_param( ((uint8_t )(*t3_add_imm)()), cpp_add, 2, 9); 
+         check_test( ((uint8_t )(*t3_add_imm)()), cpp_add, 2, 9); 
       #endif 
       #ifdef _t4_add_regs 
-         check_test_two_param( ((uint8_t )(*t4_add_regs)()), cpp_add, 4, 8); 
+         check_test( ((uint8_t )(*t4_add_regs)()), cpp_add, 4, 8); 
       #endif 
       #ifdef _t5_add_regs
-         check_test_two_param( ((uint8_t )(*t5_add_regs)()), cpp_add, 9, 9);
+         check_test( ((uint8_t )(*t5_add_regs)()), cpp_add, 9, 9);
       #endif 
       #ifdef _t6_minus_imm
-         check_test_two_param( ((uint8_t )(*t6_minus_imm)()), cpp_minus, 23, 4);
+         check_test( ((uint8_t )(*t6_minus_imm)()), cpp_minus, 23, 4);
       #endif
       #ifdef _t7_minus_imm
-         check_test_two_param( ((uint8_t )(*t7_minus_imm)()), cpp_minus, 15, 11);
+         check_test( ((uint8_t )(*t7_minus_imm)()), cpp_minus, 15, 11);
       #endif
       #ifdef _t8_minus_regs
-         check_test_two_param( ((uint8_t )(*t8_minus_regs)()), cpp_minus, 42, 6);
+         check_test( ((uint8_t )(*t8_minus_regs)()), cpp_minus, 42, 6);
       #endif
       #ifdef _t9_minus_regs
-         check_test_two_param( ((uint8_t )(*t9_minus_regs)()), cpp_minus, 23, 15);
+         check_test( ((uint8_t )(*t9_minus_regs)()), cpp_minus, 23, 15);
       #endif
       #ifdef _t10_sommig
-         check_test_one_param( ((uint8_t )(*t10_sommig)()), cpp_sommig, 7);
+         check_test( ((uint8_t )(*t10_sommig)()), cpp_sommig, 7);
       #endif
       #ifdef _t11_sommig
-         check_test_one_param( ((uint8_t )(*t11_sommig)()), cpp_sommig, 17);
+         check_test( ((uint8_t )(*t11_sommig)()), cpp_sommig, 17);
       #endif
       #ifdef _t12_sommig
-         check_test_one_param( ((uint8_t )(*t12_sommig)()), cpp_sommig, 24);
+         check_test( ((uint8_t )(*t12_sommig)()), cpp_sommig, 24);
       #endif
 
       put_string( "Unit test passed succesfully: ", false );
-      putNumber( passed );
+      put_number( passed );
       put_string( "Unit test failed: ", false );
-      putNumber( failed );
+      put_number( failed );
    }
 #endif
 
 
 int main( void ){
-   
-   usleep( 1000 );
+   delay_us( 1000 );
 
    UART_due uart;
    serial = &uart;

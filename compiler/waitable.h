@@ -1,15 +1,13 @@
-#ifndef _WAITAR_H_
-#define _WAITAR_H_
+#ifndef _WAIT_H_
+#define _WAIT_H_
 
 #define register
 #include "include/cortex/atmel/sam.h"
 #include "include/due-system-sam3xa.inc"
 #undef register
 
-//                   64 bits == curTicks
-//    40 bits == nRollOvers      24 bits == SysTick->VAL/curr 24 bits timer
-
-uint64_t getTickCount(){
+// Get the "amount" of ticks so far-ish
+uint64_t get_n_ticks(){
 	static bool initialized;
 	if( ! initialized ){
 
@@ -44,13 +42,11 @@ uint64_t getTickCount(){
    return ( (0xFFFFFF - (timer_ticks - 0xFFFFFF) ) | n_rollovers );
 }
 
-
-void usleep( unsigned long us){
+void delay_us( uint32_t us ){
 	if(us == 0)
 		return;	
-	uint64_t start = getTickCount();
-	while(getTickCount() - start < us){}
+	uint64_t start = get_n_ticks();
+	while(get_n_ticks() - start < us){}
 }
-
 
 #endif // _WAIT_H

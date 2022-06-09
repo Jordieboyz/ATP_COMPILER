@@ -27,7 +27,6 @@ UART_due::UART_due(){
 
     // Enable the receiver and the trasmitter.
     due_uart->UART_CR = UART_CR_TXEN;
-
 }
 
 void UART_due::putc(char c){
