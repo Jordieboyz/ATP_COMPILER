@@ -6,7 +6,14 @@
 #include "include/due-system-sam3xa.inc"
 #undef register
 
-// Get the "amount" of ticks so far-ish
+/**
+ * @brief
+ *  Returns amount of 'ticks' respetively so far.
+ * @details
+ *  This function initializes a timer for the arduino_due (84 MHz).
+ *  
+ * @retval The amount of ticks 'so far'
+ */
 uint64_t get_n_ticks(){
 	static bool initialized;
 	if( ! initialized ){
@@ -14,14 +21,16 @@ uint64_t get_n_ticks(){
 		// kill the watchdog
       WDT->WDT_MR = WDT_MR_WDDIS;
       
+      // Initialize 84 MHz clock.
       sam3xa::SystemInit();	         
       
-      SysTick->CTRL  = 0;                               // 0; "Pause" the timer
-      SysTick->LOAD  = SysTick_LOAD_RELOAD_Msk;   	     // 0xFFFFFF; load a 24 bits timer
-      SysTick->VAL   = SysTick_VAL_CURRENT_Msk;         // 0; clear the timer
-      SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |	  // 5; start the timer
+      // setup SysTick_timer
+      SysTick->CTRL  = 0;                                // 0;          "Pause" the timer
+      SysTick->LOAD  = SysTick_LOAD_RELOAD_Msk;          // 0xFFFFFF;   load a 24 bits timer
+      SysTick->VAL   = SysTick_VAL_CURRENT_Msk;          // 0;          clear the timer
+      SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |	  
                SysTick_CTRL_TICKINT_Msk   |
-               SysTick_CTRL_ENABLE_Msk; 
+               SysTick_CTRL_ENABLE_Msk;                  // 5;          start the timer
 	
 		initialized = true;
 	}
@@ -42,6 +51,14 @@ uint64_t get_n_ticks(){
    return ( (0xFFFFFF - (timer_ticks - 0xFFFFFF) ) | n_rollovers );
 }
 
+/**
+ * @brief
+ *  Waits an amount microseconds.
+ * @details
+ *  This function 'pauses' the program for @param us microsecond.
+ *  
+ * @param us         The amount of microsecond to 'pause'
+ */
 void delay_us( uint32_t us ){
 	if(us == 0)
 		return;	

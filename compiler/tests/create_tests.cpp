@@ -13,129 +13,113 @@
 #define IN_PATH(name) STR(TEMPLATEPATH/ID(name)TEMPLATESUFF)
 #define OUT_NAME(name) STR(ID(name)TESTSUFF)
 
-struct test {
-    uint8_t nth_test = 0;
-    std::string inpath;
-    std::string out_name;
+/**
+ * @brief
+ *  Struct with parameter for unit tests.
+ * @details
+ *  This @struct holds the parameters for unit tests.
+ * 
+ * @param nthTest       The number of produced test of the program
+ * @param inPath        The absolute path to the 'template file'
+ * @param outName       Name of the output file
+ * @param vars          This holds the 1 or 2 template variables (depending on template)
+ * @param nVars         Amount of variables in @param vars
+ */
+struct Test {
+    int nthTest = 0;
+    std::string inPath;
+    std::string outName;
     int vars[2];
-    int n_params;
+    int nVars;
 
-    test( std::string inpath, std::string out_name) :
-        inpath(inpath), 
-        out_name(out_name)
+    Test( std::string inPath, std::string outName ) :
+        inPath(inPath), 
+        outName(outName)
     {}
 };
 
-std::string get_number(uint8_t c){
-    std::string number;
-    if( c >= 0 && c <= 9){
-        number += (c + '0');
-    } else if( c >= 10 && c <= 99){
-        number += ( (c/10) + '0');
-        number += ( (c - ((c/10)*10)) + '0');
-    } else {
-        number += ( (c/100) + '0');
-        number += ( (c - (((c/100)*100))) / 10 + '0');
-        number += (  c - ((c/100*100)) - (((int)((c - (c/100*100))  /10)) *10) + '0' );
-    }
-    return number;
-}
+// global variable to keep track of the amount of created tests
+int nTests = 0;
 
-bool create_test(test &t){
-    std::string out_name = get_number(t.nth_test) + t.out_name;
-    std::fstream out( "tests/t"+out_name , std::fstream::out);
-    if(!out)
-        return 0;
 
-    std::fstream in(t.inpath, std::fstream::in);
-    if(!in)
-        return 0;
+/**
+ * @brief
+ *  A fucntion to create unit tests.
+ * @details
+ *  This function will create and output a test file based on a template.
+ *  It sets up the @see @struct Test with f.e. it's parameters. After, it 
+ *  reads the input file character for character and replaces the '?' with vars;
+ * 
+ * @param t             Reference to a @struct Test
+ * @param var1          The first parameter for the @struct Test::vars
+ * @param var2          The second parameter for the @struct Test::vars
+ */
+void create_test(Test &t, int var1, int var2 = -1){
+    // setup for the creation of the test
+    t.nthTest = nTests++;
+    t.nVars = (var2 != -1) + 1;
+    t.vars[0] = var1;
+    t.vars[1] = var2;
 
-    char look_for = '?';
-    int vars_replaced = 0;
-    std::string line;
-    while( std::getline(in, line ) ){
-        for(unsigned i = 0; i < line.length(); i++){
-            if(line[i] == look_for){
-                out << get_number(t.vars[vars_replaced]);
-                vars_replaced++;
-            }
-            else {
-                out << line[i];
-            }
-        }
-        out << std::endl;
-    }
+    // fstream for input and output files
+    std::fstream in(t.inPath, std::fstream::in);
+    std::fstream out( "tests/t" + std::to_string(t.nthTest) + t.outName , 
+                                                            std::fstream::out);
+    if(!in | !out)
+        return;
+
+    // read inputfile char by char and replace the placeholder '?' with test::vars
+    char byte = 0;
+    int varsReplaced = 0;
+
+    while( in.get( byte ) )
+        (byte == '?') ? 
+                out << std::to_string(t.vars[varsReplaced++]) :
+                out << byte;
+         
     in.close();
     out.close();
-
-    return 1;
 }
-
-int n_tests = 0;
-
-
-void setup_test( test &t, int p1, int p2 = -1){
-    t.nth_test = n_tests++;
-    t.n_params = (p2 != -1) + 1;
-    t.vars[0] = p1;
-    t.vars[1] = p2;
-}
-
 
 int main(){ 
+    Test _even_odd1( IN_PATH(_even_odd), OUT_NAME(_even_odd));
+    create_test(_even_odd1, 3 );
 
-    test _even_odd1( IN_PATH(_even_odd), OUT_NAME(_even_odd));
-    setup_test( _even_odd1, 3 );
-    create_test(_even_odd1);
+    Test _even_odd2( IN_PATH(_even_odd), OUT_NAME(_even_odd));
+    create_test( _even_odd2, 6 );
 
-    test _even_odd2( IN_PATH(_even_odd), OUT_NAME(_even_odd));
-    setup_test( _even_odd2, 6 );
-    create_test(_even_odd2);
+    Test _add_imm( IN_PATH(_add_imm), OUT_NAME(_add_imm));
+    create_test( _add_imm, 3, 7 );
 
-    test _add_imm( IN_PATH(_add_imm), OUT_NAME(_add_imm));
-    setup_test( _add_imm, 3, 7 );
-    create_test(_add_imm);
+    Test _add_imm1( IN_PATH(_add_imm), OUT_NAME(_add_imm));
+    create_test( _add_imm1, 2, 9 );
 
-    test _add_imm1( IN_PATH(_add_imm), OUT_NAME(_add_imm));
-    setup_test( _add_imm1, 2, 9 );
-    create_test(_add_imm1);
+    Test _add_regs( IN_PATH(_add_regs), OUT_NAME(_add_regs));
+    create_test( _add_regs, 4, 8 );
 
-    test _add_regs( IN_PATH(_add_regs), OUT_NAME(_add_regs));
-    setup_test( _add_regs, 4, 8 );
-    create_test(_add_regs);
+    Test _add_regs1( IN_PATH(_add_regs), OUT_NAME(_add_regs));
+    create_test( _add_regs1, 9, 9 );
 
-    test _add_regs1( IN_PATH(_add_regs), OUT_NAME(_add_regs));
-    setup_test( _add_regs1, 9, 9 );
-    create_test(_add_regs1);
+    Test _minus_imm( IN_PATH(_minus_imm), OUT_NAME(_minus_imm));
+    create_test( _minus_imm, 23, 4 );
 
-    test _minus_imm( IN_PATH(_minus_imm), OUT_NAME(_minus_imm));
-    setup_test( _minus_imm, 23, 4 );
-    create_test(_minus_imm);
+    Test _minus_imm1( IN_PATH(_minus_imm), OUT_NAME(_minus_imm));
+    create_test( _minus_imm1, 15, 11 );
 
-    test _minus_imm1( IN_PATH(_minus_imm), OUT_NAME(_minus_imm));
-    setup_test( _minus_imm1, 15, 11 );
-    create_test(_minus_imm1);
-
-    test _minus_regs( IN_PATH(_minus_regs), OUT_NAME(_minus_regs));
-    setup_test( _minus_regs, 42, 6 );
-    create_test(_minus_regs);
+    Test _minus_regs( IN_PATH(_minus_regs), OUT_NAME(_minus_regs));
+    create_test( _minus_regs, 42, 6 );
     
-    test _minus_regs1( IN_PATH(_minus_regs), OUT_NAME(_minus_regs));
-    setup_test( _minus_regs1, 23, 15 );
-    create_test(_minus_regs1);
+    Test _minus_regs1( IN_PATH(_minus_regs), OUT_NAME(_minus_regs));
+    create_test( _minus_regs1, 23, 15 );
 
-    test _sommig( IN_PATH(_sommig), OUT_NAME(_sommig));
-    setup_test( _sommig, 7 );
-    create_test(_sommig);
+    Test _sommig( IN_PATH(_sommig), OUT_NAME(_sommig));
+    create_test( _sommig, 7 );
 
-    test _sommig1( IN_PATH(_sommig), OUT_NAME(_sommig));
-    setup_test( _sommig1, 17 );
-    create_test(_sommig1);
+    Test _sommig1( IN_PATH(_sommig), OUT_NAME(_sommig));
+    create_test( _sommig1, 17 );
 
-    test _sommig2( IN_PATH(_sommig), OUT_NAME(_sommig));
-    setup_test( _sommig2, 24 );
-    create_test(_sommig2);
+    Test _sommig2( IN_PATH(_sommig), OUT_NAME(_sommig));
+    create_test( _sommig2, 24 );
     
     return 0;
 }

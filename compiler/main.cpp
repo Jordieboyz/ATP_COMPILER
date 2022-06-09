@@ -1,30 +1,21 @@
 #include "UART/UART_due.h"
 #include "waitable.h"
 
-
-/** format!
- * @brief
- *  Dithers a binary image with the selected dither filter.
- * @details
- *  This functions attempts to dither the image with the
- *  selected filter, the size of the data part of the output
- *  image should at least 1/8 of the number of pixels.
- * @param
- *   @param int z    blablabla
- *   @param int w    blablabla
- * @retval
- *  returns 0 if success, 
- *  -EINVAL if dither filter is not available,
- *  -EOVERFLOW if provided output image is to small te contain data.
- */
-
-
 // A global UART_due instance. 
 // This makes calling the UART_due::putc possible witout intializing the UART_due every time
 UART_due * serial;
 
-// put_number output the actual number (max 3 digits), not the "ascii-table-value"
-extern "C" void put_number( uint8_t c){ 
+/**
+ * @brief
+ *  Output a character as an 3 digit integer
+ * @details
+ *  This functions checks what 'number' we are working with and outputs this 
+ *  as an actual integer. 
+ *  f.e. c = 13; output: serial->putc('1'); serial->putc('3');
+ * 
+ * @param c      Given character (which cannot be greater than 3 digits)
+ */
+extern "C" void put_number(const char c){ 
    if( c >= 0 && c <= 9){
       serial->putc( c + '0');
    } else if( c >= 10 && c <= 99){
@@ -38,7 +29,15 @@ extern "C" void put_number( uint8_t c){
    serial->putc('\n');
 }
 
-// making my life easier to print a whole string of characters
+/**
+ * @brief
+ *  Outputs multiple characters in a string.
+ * @details
+ *  This functions outputs a string using the UART_due::putc().
+ *  
+ * @param str      String to output
+ * @param endl     Bool wether we need an '\n' added at the end of the string.
+ */
 void put_string(const char * str, bool endl = true){
    while( *str )
       serial->putc(*str++);
@@ -46,6 +45,12 @@ void put_string(const char * str, bool endl = true){
       serial->putc('\n');
 }
 
+/**
+ * @brief
+ *  Macro wether we need to perform unit tests.
+ * @details
+ *  This macro is automaticly defined in the @see ../Makefile.inc
+ */
 #ifdef UNIT_TESTS 
    #include "include_tests.h"
    
@@ -54,23 +59,44 @@ void put_string(const char * str, bool endl = true){
    int failed = 0;
 
    // C++ implementations of certain functions and checks for unit tests
-   auto cpp_even =  [](int a, int b){ return (int)(b % 2 == 0) ;};
-   auto cpp_add =   [](int a, int b){ return a + b;};
-   auto cpp_minus = [](int a, int b){ return a - b;};
+   auto cpp_even  = [](int a, int b){ return (int)(b % 2 == 0); };
+   auto cpp_add   = [](int a, int b){ return a + b; };
+   auto cpp_minus = [](int a, int b){ return a - b; };
    int cpp_sommig(int a, int b){
       if( a > 1)
          return a + cpp_sommig( a - 1, b );
       return 1;
    }
 
-
-   void check_test( uint8_t p, int (*check2)(int, int), int a, int b = -1 ){
-      if( p == check2(a, b) )
+   /**
+    * @brief
+    *  Compare two functions with function pointers.
+    * @details
+    *  This functions compares @param res with the 
+    *  output of @param fptr. It increments @see passed or @see failed
+    *  wether the comparison is equal or not.
+    *  
+    * @param res      This is the result of the performed '*.asm' routine.
+    * @param fptr     This is a function pointer to compare with @see res.
+    * @param a        The first parameter for @param fptr
+    * @param b        The second parameter for @param fptr
+    */
+   void check_test( const uint8_t res, int (*fptr)(int, int), int a, int b = -1 ){
+      if( res == fptr(a, b) )
          passed++;
       else
          failed++;
    }; 
 
+   /**
+    * @brief
+    *  Perform unit tests based on preprocessed defenitions;
+    * @details
+    *  This functions performs tests for the preprocessed defenitions @see ../Makefile.inc.
+    *  It performs the @see check_test and uses the '*.asm' function defined in 
+    *  @see include_tests.h and the C++ implementations I wrote. After, it outputs @see put_string
+    *  The amount of tests passed or failed.
+    */
    void perform_tests(){
       #ifdef _t0_even_odd
          check_test( ((uint8_t )(*t0_even_odd)()), cpp_even, 3); 
@@ -118,7 +144,6 @@ void put_string(const char * str, bool endl = true){
       put_number( failed );
    }
 #endif
-
 
 int main( void ){
    delay_us( 1000 );
