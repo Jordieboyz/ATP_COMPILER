@@ -7,8 +7,7 @@ vpath %.asm  $(SEARCH)
 vpath %.c    $(SEARCH)
 vpath %.cpp  $(SEARCH)
 
-TESTSDIR=tests
-TESTDEF := -DUNIT_TESTS
+
 TESTDEF += $(addprefix '-D_', $(basename $(subst $(TESTSDIR)/,,$(shell find tests -name "*.asm")) .asm ))
 
 EXTERNS=  $(foreach name,$(basename $(subst $(TESTSDIR)/,,$(shell find tests -name "*.asm")) .asm ), $(subst @, $(name), extern "C" uint8_t@(); ) ) 

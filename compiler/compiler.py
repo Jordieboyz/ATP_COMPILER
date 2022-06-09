@@ -35,6 +35,7 @@ spacing = lambda part, s = ' ' : part+s
 imm = lambda  number: '#' + number
 reg = lambda reg : 'r' + reg
 
+# Produce an instruction string. f.e. add r0, r0, #0
 def get_instruction_string(instr, dest, val = None):
     if instr == cortex.instructions.PUSH or instr == cortex.instructions.POP:
         return
@@ -269,7 +270,8 @@ def start_compiling( ast, func_decl, var_list, label_name, routine_dict, last):
     return start_compiling(rest, func_decl, var_list, label_name, routine_dict, statement)
     
 
-# essentially we just return the amount of global variables so we know what registers to safen
+# Essentially we just return the amount of global variables 
+# So we know what registers to safen
 def get_reg_init_string( ast, reg_list, push_str = " " ):
     if not ast:
         return "push {" + push_str + " lr }"
@@ -297,20 +299,28 @@ def format_file(rDict, opened_file):
                 opened_file.write("\t" + step + "\n")
         opened_file.write("\n")
         
-def compile_as(ast, func_decl, filename):  
+def compile_as(ast, func_decl, filename):
+    # We dont use the 'scratch registers to store 'global' variables
+    # So, we need to make sure they won't be used until needed
+    start_regs = ["", "", "", ""]
+    init_label = "init"
+    file_name_without_extention = filename[filename.index('/')+1:-4]
+
     routine_dict = start_compiling(
                         ast, 
-                        func_decl,          \
-                        ["", "", "", ""],             \
-                        filename[filename.index('/')+1:-4],                                           \
-                        { "init" : [],                                       \
-                             filename[filename.index('/')+1:-4] : [get_reg_init_string(ast, ["", "", "", ""])] }, \
+                        func_decl,                                            \
+                        start_regs,                                           \
+                        file_name_without_extention,                          \
+                        { init_label : [],                                    \
+                             file_name_without_extention : 
+                                    [get_reg_init_string(ast, ["", "", "", ""])] }, \
                         None)
     
-    routine_dict["init"].append(".global " + filename[filename.index('/')+1:-4])
-    routine_dict["init"].append(".text")
-    routine_dict["init"].append(".cpu cortex-m0")
-    routine_dict["init"].append(".align 2")
+    routine_dict[init_label].append(".global " +                              \
+                                        file_name_without_extention )         
+    routine_dict[init_label].append(".text")
+    routine_dict[init_label].append(".cpu cortex-m0")
+    routine_dict[init_label].append(".align 2")
     
 
     FILE=open(filename, "w")

@@ -28,5 +28,4 @@ lexed = lex(content)
 
 _, parsed = Parse(lexed)
 
-
 compile_as(parsed.statements, create_func_declarations([], content.split('#')[1]), OUTPUT_FILE_NAME)

@@ -14,5 +14,8 @@ HEADERS += waitable.h
 SEARCH  := UART 
 SEARCH 	+= include
 
+TESTSDIR := tests
+TESTDEF  := -DUNIT_TESTS
+
 RELATIVE	      ?= ../
 include           $(RELATIVE)Makefile.ardue

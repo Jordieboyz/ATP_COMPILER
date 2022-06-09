@@ -17,3 +17,4 @@ for entry in $TESTDIR*.tst; do
 	echo "Created: $(basename $entry .tst).asm"
 done
 
+sudo make run
