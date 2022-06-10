@@ -1,7 +1,9 @@
 from Parser import get_func_def
-from tokens import Number, Variable, Is, Add, Minus
+from tokens import Number, Variable, Is, Add, Minus, Times, Divide
 from Statements import Function, MathStatement, IfStatement, \
                         ReturnFunc, ConditionsLoop, Scope, Output
+
+
 
 class cortex:
     START_LABEL = 'start'
@@ -10,12 +12,14 @@ class cortex:
         PUSH =      'push'
         POP =       'pop'
         BRANCHL =   'bl'
-        BRANCH =    lambda expr = None : str('b' + expr) if expr is not None else 'b'
-        MOV =      'mov'
+        BRANCH =    'b'
+        MOV =       'mov'
         STORE=      'str'
         CMP=        'cmp'
         ADD=        'add'
         SUB=        'sub'
+        MULS=        'muls'
+        UDIV=       'udiv'
         
     class registers:
         RETURNREG = 'r0'
@@ -31,69 +35,79 @@ class cortex:
         PC = 'pc'
         
 
+maths : dict() = {
+    Add               : cortex.instructions.ADD,
+    Minus        : cortex.instructions.SUB,
+    Is          : cortex.instructions.MOV,
+    Times           : cortex.instructions.MULS,
+    Divide        : cortex.instructions.UDIV
+}
+
 spacing = lambda part, s = ' ' : part+s
-imm = lambda  number: '#' + number
-reg = lambda reg : 'r' + reg
+imm = lambda  number: '#' + str(number)
+reg = lambda reg : 'r' + str(reg)
 
 # Produce an instruction string. f.e. add r0, r0, #0
 def get_instruction_string(instr, dest, val = None):
     if instr == cortex.instructions.PUSH or instr == cortex.instructions.POP:
         return
-    elif instr == cortex.instructions.ADD or instr == cortex.instructions.SUB:
+    elif instr == cortex.instructions.ADD or instr == cortex.instructions.SUB or \
+        instr == cortex.instructions.MULS or instr == cortex.instructions.UDIV:
         return spacing(instr) + spacing(dest, ', ') + spacing(dest, ', ') + spacing(val)
     
-    elif instr[0] == 'b' or instr == cortex.instructions.BRANCHL:
+    elif instr[0] == cortex.instructions.BRANCH or instr == cortex.instructions.BRANCHL:
         return spacing(instr) + spacing(dest)
     return spacing(instr) + spacing(dest, ', ') + spacing(val)
 
 
-def start_compiling( ast, func_decl, var_list, label_name, routine_dict, last):
+def start_compiling( ast, funcDecl, varList, labelName, routineDict, last):
 
-    # this function returns a new list where one or more items are replaced with another value (new becomes old) 
-    def repl(old, new, iList, new_list = []):
-        if not iList:
-            return new_list
+    # This function returns a new list where one or more items are replaced 
+    # with another value 
+    def replace(oldVal, newVal, oldList, newlist = []):
+        if not oldList:
+            return newlist
         
-        item, *rest = iList
+        item, *rest = oldList
         
-        if item == old:
-            new_list.append(new)
+        if item == oldVal:
+            newlist.append(newVal)
         else:
-            new_list.append(item)
+            newlist.append(item)
         
-        return repl(old, new, rest, new_list)
+        return replace(oldVal, newVal, rest, newlist)
     
 
     if not ast:
-        if routine_dict[label_name]:
-            if routine_dict[label_name][-1][:3] != cortex.instructions.PUSH:
-                if label_name[0] != '.':
-                    routine_dict[label_name].append(
-                            routine_dict[label_name][0].replace(
+        if routineDict[labelName]:
+            if routineDict[labelName][-1][:3] != cortex.instructions.PUSH:
+                if labelName[0] != '.':
+                    routineDict[labelName].append(
+                            routineDict[labelName][0].replace(
                                             cortex.instructions.PUSH, 
                                             cortex.instructions.POP).replace(
                                                             cortex.registers.LR, 
                                                             cortex.registers.PC)
                                                 )
                 else:
-                    routine_dict[label_name].append("pop { pc }" )
-        return routine_dict
+                    routineDict[labelName].append(cortex.instructions.POP + " { pc }" )
+        return routineDict
 
     
     statement, *rest = ast
 
-    if label_name not in routine_dict:
-        if label_name[:3] == 'cl_':
-            routine_dict[label_name] = ["push { lr }"]
+    if labelName not in routineDict:
+        if labelName[:3] == 'cl_':
+            routineDict[labelName] = ["push { lr }"]
         else:
-           routine_dict[label_name] = []
+           routineDict[labelName] = []
 
-    # Use r0 as return-register. at the end of a fucntion, store the result in r0.
+    # Use r0 as return-register. at the end of a function, store the result in r0.
     if isinstance(statement, ReturnFunc):
         
-        # reuturn f.e. True or false, or just a constant noumber in general
+        # reuturn f.e. True or false, or just a constant number in general
         if isinstance( statement.rvalue, Number):
-            routine_dict[label_name].append( 
+            routineDict[labelName].append( 
                                         get_instruction_string(
                                                 cortex.instructions.MOV, 
                                                 cortex.registers.RETURNREG, 
@@ -101,146 +115,165 @@ def start_compiling( ast, func_decl, var_list, label_name, routine_dict, last):
                                                 )
                                         )
             
-        # return a variable, check where the variable is in the var_list and use that register to move to r0
+        # Return a variable, check where the variable is in the var_list 
+        # and use that register to move to r0
         if isinstance( statement.rvalue, Variable):
-            if statement.rvalue.content in var_list:
-                routine_dict[label_name].append( 
+            if statement.rvalue.content in varList:
+                routineDict[labelName].append( 
                                             get_instruction_string(
-                                                    cortex.instructions.MOV, 
-                                                    cortex.registers.RETURNREG, 
-                                                    reg(str((var_list.index(statement.rvalue.content))))
-                                                    )
-                                            )
+                                                cortex.instructions.MOV, 
+                                                cortex.registers.RETURNREG, 
+                                                reg(
+                                                 str(
+                                                  varList.index(
+                                                    statement.rvalue.content
+                                                 )
+                                                )
+                                               )
+                                              )
+                                             )
         
-        # return a fucntion result, we need to declare teh function first 
+        # return a function result, we need to declare the function first 
         if isinstance(statement.rvalue, Function):
             
             # create branch to function
-            routine_dict[label_name].append(
+            routineDict[labelName].append(
                                             get_instruction_string( 
                                                     cortex.instructions.BRANCHL, 
                                                     statement.rvalue.funcname
                                                     )
                                             )
             
-            func_statements = get_func_def(func_decl, statement.rvalue.funcname)                    
+            func_statements = get_func_def(funcDecl, statement.rvalue.funcname)                    
             
-            # for every start of a function, we need to push the link regsiter (and after pop the program counter)
-            if statement.rvalue.funcname not in routine_dict:
-                routine_dict[statement.rvalue.funcname] = ["push { lr }"]
+            # for every start of a function, we need to push the link regsiter
+            if statement.rvalue.funcname not in routineDict:
+                routineDict[statement.rvalue.funcname] = ["push { lr }"]
                 
-       
-                start_compiling(func_statements.statements[1:], func_decl, repl(statement.rvalue.func_params[0].content, func_statements.statements[0].func_params[0].content, var_list), statement.rvalue.funcname, routine_dict,  last)
-    
-    
-
+                # The first element in the func_statements is the "Function" Statement, so this needs to be ignored
+                # We also need to replace the global variable names with the given parameters of the function in the 
+                # registers.
+                start_compiling( func_statements.statements[1:], funcDecl, 
+                                    replace( statement.rvalue.func_params[0].content, 
+                                             func_statements.statements[0].func_params[0].content, 
+                                             varList
+                                    ), 
+                                    statement.rvalue.funcname, routineDict,  
+                                    last
+                                )
         
-        
-    # output the number which is on r0 at this moment            
+    # Output the number which is on r0 at this moment            
     elif isinstance( statement, Output):
-            routine_dict[label_name].append(
-                                            get_instruction_string( 
-                                                    cortex.instructions.BRANCHL, 
-                                                    'putNumber'
-                                                    )
-                                            )
+            routineDict[labelName].append(
+                                        get_instruction_string( 
+                                                cortex.instructions.BRANCHL, 
+                                                'put_number'
+                                                )
+                                        )
 
 
-    # perform an comparisson which will update the flags.        
+    # perform a comparison which will update the flags.        
     elif isinstance( statement, IfStatement):
         if isinstance( statement.lvalue, Variable):
             if isinstance( statement.rvalue, Number):
-                routine_dict[label_name].append(
-                                                get_instruction_string(
-                                                        cortex.instructions.CMP,
-                                                        reg(str(var_list.index(statement.lvalue.content))),
-                                                        imm(statement.rvalue.content)
-                                                        )
-                                                )
-                last = statement
+                routineDict[labelName].append(
+                                get_instruction_string(
+                                    cortex.instructions.CMP,
+                                    reg(str(varList.index(statement.lvalue.content))),
+                                    imm(statement.rvalue.content)
+                                    )
+                                )
+                                                
+            if isinstance( statement.rvalue, Variable):
+                if statement.rvalue.content in varList:
+                    routineDict[labelName].append(
+                                                    get_instruction_string(
+                                                            cortex.instructions.CMP,
+                                                            reg(str(varList.index(statement.lvalue.content))),
+                                                            reg(str(varList.index(statement.rvalue.content)))
+                                                            )
+                                                    )
+            last = statement
+            
+            
            
     # perform a mathimatical instruction
     elif isinstance( statement, MathStatement):
-        if isinstance( statement.rvalue, Number):
-            if isinstance( statement.operator, Minus):
-                if statement.lvalue.content in var_list:
-
-                    routine_dict[label_name].append(
-                                                    get_instruction_string(
-                                                            cortex.instructions.SUB,
-                                                            reg(str((var_list.index(statement.lvalue.content)))),
-                                                            imm(statement.rvalue.content)
-                                                            )
-                                                    )
-            if isinstance( statement.operator, Add):
-                    routine_dict[label_name].append(
-                                                    get_instruction_string(
-                                                            cortex.instructions.ADD,
-                                                            reg(str((var_list.index(statement.lvalue.content)))),
-                                                            imm(statement.rvalue.content)
-                                                            )
-                                                    )
-            if isinstance( statement.operator, Is):
-                if statement.lvalue.content in var_list:
-                    routine_dict[label_name].append(
-                                                    get_instruction_string(
-                                                            cortex.instructions.MOV,
-                                                            reg(str((var_list.index(statement.lvalue.content)) + 3)),
-                                                            imm(statement.rvalue.content)
-                                                            )
-                                                    )
-                else:
-                    # is it a local or global value?
-                    if label_name != cortex.START_LABEL:
-                        if '' in var_list:
-                            var_list[var_list[:4].index('')] = statement.lvalue.content
-                        else:
-                            var_list.append(statement.lvalue.content)
-                            
-                        routine_dict[label_name].append(
-                                                        get_instruction_string(
-                                                                cortex.instructions.MOV,
-                                                                reg(str((var_list.index(statement.lvalue.content)))),
-                                                                imm(statement.rvalue.content)
-                                                                )
-                                                        )
-                    else:
-                        var_list.append(statement.lvalue.content)
-                        routine_dict[label_name].append(
-                                                        get_instruction_string(
-                                                                cortex.instructions.MOV,
-                                                                reg(str(len(var_list)-1)),
-                                                                imm(statement.rvalue.content)
-                                                                )
-                                                        )
+        if isinstance( statement.lvalue, Variable ):
+            if statement.lvalue.content in varList:
+                if isinstance( statement.rvalue, Number):
+                    if isinstance( statement.operator, Is):
+                        routineDict[labelName].append(
+                                 get_instruction_string(
+                                    cortex.instructions.MOV,
+                                    reg(varList.index(statement.lvalue.content)),
+                                    imm(statement.rvalue.content)
+                                )
+                            )
+                    elif isinstance( statement.operator, ( Add, Minus, Times, Divide ) ):
+                        routineDict[labelName].append(
+                                 get_instruction_string(
+                                    maths[type(statement.operator)],
+                                    reg(varList.index(statement.lvalue.content)),
+                                    imm(statement.rvalue.content)
+                                )
+                        ) 
                         
-        elif isinstance(statement.rvalue, Variable ):
-            if isinstance( statement.operator, Add):
-                    routine_dict[label_name].append(
-                                                get_instruction_string(
-                                                        cortex.instructions.ADD,
-                                                        reg(str((var_list.index(statement.lvalue.content)))),
-                                                        reg(str((var_list.index(statement.rvalue.content))))
-                                                )
-                                        )
-            elif isinstance( statement.operator, Minus):
-                    routine_dict[label_name].append(
-                                                get_instruction_string(
-                                                        cortex.instructions.SUB,
-                                                        reg(str((var_list.index(statement.lvalue.content)))),
-                                                        reg(str((var_list.index(statement.rvalue.content))))
-                                                )
-                                        )
-        
+                elif isinstance( statement.rvalue, Variable ):
+                    if statement.rvalue.content in varList:
+                        if isinstance( statement.operator, Is):
+                            routineDict[labelName].append(
+                                     get_instruction_string(
+                                        cortex.instructions.MOV,
+                                        reg(varList.index(statement.lvalue.content)),
+                                        reg(varList.index(statement.rvalue.content)),
+                                    )
+                                )
+                        elif isinstance( statement.operator, ( Add, Minus, Times, Divide ) ):
+                            routineDict[labelName].append(
+                                     get_instruction_string(
+                                        maths[type(statement.operator)],
+                                        reg(varList.index(statement.lvalue.content)),
+                                        reg(varList.index(statement.rvalue.content))
+                                    )
+                            ) 
+                        
+            # statements.lvalue is not in varlist
+            else:
+                # is it a local var?
+                if labelName != cortex.START_LABEL:
+                    if '' in varList:
+                        varList[varList[:4].index('')] = statement.lvalue.content
+                    else:
+                        varList.append(statement.lvalue.content)
+                        
+                    routineDict[labelName].append(
+                                 get_instruction_string(
+                                    cortex.instructions.MOV,
+                                    reg(str(varList.index(statement.lvalue.content))),
+                                    imm(statement.rvalue.content)
+                                    )
+                            )
+                # it is a global var.
+                else:
+                    varList.append(statement.lvalue.content)
+                    routineDict[labelName].append(
+                                    get_instruction_string(
+                                            cortex.instructions.MOV,
+                                            reg(str(varList.index(statement.lvalue.content))),
+                                            imm(statement.rvalue.content)
+                                            )
+                                    )
+
         
     elif isinstance( statement, ConditionsLoop):
-        routine_dict[label_name].append(
+        routineDict[labelName].append(
                                         get_instruction_string(
                                                 cortex.instructions.BRANCHL,
-                                                "cl_" + str(len(routine_dict))
+                                                "cl_" + str(len(routineDict))
                                                 )
                                         )
-        start_compiling([statement.expr, statement.loop], func_decl, var_list, "cl_" + str(len(routine_dict)), routine_dict, statement)
+        start_compiling([statement.expr, statement.loop], funcDecl, varList, "cl_" + str(len(routineDict)), routineDict, statement)
 
 
         
@@ -248,33 +281,33 @@ def start_compiling( ast, func_decl, var_list, label_name, routine_dict, last):
     # Create a new scope and so a  new label for f.e. a subroutine
     elif isinstance(statement, Scope):
         if isinstance(last, IfStatement):
-            routine_dict[label_name].append(
+            routineDict[labelName].append(
                                             get_instruction_string(
-                                                    cortex.instructions.BRANCH(last.operator.expr[:2]),
-                                                    ".rt_" + str(len(routine_dict))
+                                                    cortex.instructions.BRANCH + last.operator.expr[:2],
+                                                    ".rt_" + str(len(routineDict))
                                                     )
                                             )
-            start_compiling(statement.statements, func_decl, var_list, ".rt_" + str(len(routine_dict)), routine_dict, last)
-            rt_label = ".rt_" + str(len(routine_dict)-1)
-            if label_name[:3] == 'cl_':
-                if routine_dict[rt_label][-1] == "pop { pc }":
-                    routine_dict[rt_label].remove(routine_dict[rt_label][-1])
-                    routine_dict[rt_label].append(
+            start_compiling(statement.statements, funcDecl, varList, ".rt_" + str(len(routineDict)), routineDict, last)
+            rt_label = ".rt_" + str(len(routineDict)-1)
+            if labelName[:3] == 'cl_':
+                if routineDict[rt_label][-1] == "pop { pc }":
+                    routineDict[rt_label].remove(routineDict[rt_label][-1])
+                    routineDict[rt_label].append(
                                                     get_instruction_string(
-                                                            cortex.instructions.BRANCH(),
-                                                            label_name
+                                                            cortex.instructions.BRANCH,
+                                                            labelName
                                                             )
                                                     )
 
     
-    return start_compiling(rest, func_decl, var_list, label_name, routine_dict, statement)
+    return start_compiling(rest, funcDecl, varList, labelName, routineDict, statement)
     
 
 # Essentially we just return the amount of global variables 
 # So we know what registers to safen
-def get_reg_init_string( ast, reg_list, push_str = " " ):
+def get_reg_init_string( ast, reg_list = ["", "", "", ""], push_str = " " ):
     if not ast:
-        return "push {" + push_str + " lr }"
+        return cortex.instructions.PUSH + " {" + push_str + " lr }"
     
     statement, *rest = ast
     
@@ -288,41 +321,42 @@ def get_reg_init_string( ast, reg_list, push_str = " " ):
     return get_reg_init_string(rest, reg_list, push_str)
         
     
-def format_file(rDict, opened_file):
-    for init in rDict["init"]:
-        opened_file.write(init + "\n")
+def format_file(rDict, openedFile, initLabel = "init"):
+    for init in rDict[initLabel]:
+        openedFile.write(init + "\n")
     
     for item in rDict:
-        if item != "init":
-            opened_file.write(item + ":\n")
+        if item != initLabel:
+            openedFile.write(item + ":\n")
             for step in rDict[item]:
-                opened_file.write("\t" + step + "\n")
-        opened_file.write("\n")
+                openedFile.write("\t" + step + "\n")
+        openedFile.write("\n")
         
-def compile_as(ast, func_decl, filename):
+def compile_as(ast, funcDecl, filename):
     # We dont use the 'scratch registers to store 'global' variables
     # So, we need to make sure they won't be used until needed
-    start_regs = ["", "", "", ""]
-    init_label = "init"
-    file_name_without_extention = filename[filename.index('/')+1:-4]
-
-    routine_dict = start_compiling(
+    startRegs = ["", "", "", ""]
+    initLabel = "init"
+    fileNameWithoutExtention = filename[filename.index('/')+1:-4]
+    cortex.START_LABEL = filename[filename.index('/')+1:-4]
+    
+    routineDict = start_compiling(
                         ast, 
-                        func_decl,                                            \
-                        start_regs,                                           \
-                        file_name_without_extention,                          \
-                        { init_label : [],                                    \
-                             file_name_without_extention : 
-                                    [get_reg_init_string(ast, ["", "", "", ""])] }, \
+                        funcDecl,                                            \
+                        startRegs,                                           \
+                        fileNameWithoutExtention,                          \
+                        { initLabel : [],                                    \
+                             fileNameWithoutExtention : 
+                                    [get_reg_init_string(ast)] }, \
                         None)
     
-    routine_dict[init_label].append(".global " +                              \
-                                        file_name_without_extention )         
-    routine_dict[init_label].append(".text")
-    routine_dict[init_label].append(".cpu cortex-m0")
-    routine_dict[init_label].append(".align 2")
+    routineDict[initLabel].append(".global " +                              \
+                                        fileNameWithoutExtention )         
+    routineDict[initLabel].append(".text")
+    routineDict[initLabel].append(".cpu cortex-m0")
+    routineDict[initLabel].append(".align 2")
     
 
     FILE=open(filename, "w")
-    format_file(routine_dict, FILE)
+    format_file(routineDict, FILE, initLabel)
     FILE.close()

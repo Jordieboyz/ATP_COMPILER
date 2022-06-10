@@ -1,3 +1,4 @@
+OS=linux
 python=3.8.10
 gcc=9.4.0
 make=4.2.1
