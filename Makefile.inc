@@ -9,7 +9,6 @@ vpath %.cpp  $(SEARCH)
 
 
 TESTDEF += $(addprefix '-D_', $(basename $(subst $(TESTSDIR)/,,$(shell find tests -name "*.asm")) .asm ))
-
 EXTERNS=  $(foreach name,$(basename $(subst $(TESTSDIR)/,,$(shell find tests -name "*.asm")) .asm ), $(subst @, $(name), extern "C" uint8_t@(); ) ) 
 	
 
@@ -24,11 +23,11 @@ COMMON        += -Wno-maybe-uninitialized -Wno-unused-local-typedefs -Wno-unused
 COMMON        += -Os
 COMMON        += -fdata-sections -ffunction-sections
 COMMON        += $(foreach x, $(SEARCH), -I$(x))
-COMMON 	+= $(TESTDEF) 
+COMMON 		  += $(TESTDEF) 
 	
 # add C++-specific flags
 CPP_FLAGS     := -std=c++17
-CPP_FLAGS     += -fno-rtti -fconcepts
+CPP_FLAGS     += -fno-rtti 
 CPP_FLAGS     += -fno-exceptions -fno-asynchronous-unwind-tables
 CPP_FLAGS     += -fno-threadsafe-statics
 CPP_FLAGS     += -fno-use-cxa-get-exception-ptr -fno-use-cxa-atexit
@@ -90,14 +89,12 @@ LD_CONFIG    += -DRAM_START=0x20070000 -DRAM_SIZE=96k
 # How to make a linkerscipt by preprocessing a .c linkerfile template
 main.ld: $(CORTEX_LD)
 	"arm-none-eabi-gcc" $(LD_CONFIG) -E -P -C $< -o $@
-#	@echo ' '
 	
 
 # make .elf by linking all objects
 main.elf: $(addprefix ./,$(OBJECTS)) main.ld 
 	@echo $(LN_FLAGS) > _linker_flags
 	"arm-none-eabi-g++" @_common_flags @_linker_flags -o $@ $(OBJECTS)  -nostdlib -nodefaultlibs -nostartfiles -lm -lgcc -lc -T main.ld -Iinclude/cortex/atmel/sam3xa/source/as_gcc
-#	@echo ' '
 	
 # How to make a .bin file from an .elf file
 main.bin: main.elf
@@ -112,7 +109,7 @@ main.bin: main.elf
 
 CLEAN		+= _common_flags _linker_flags _cpp_flags
 CLEAN   	+= main.ld main.bin main.elf
-CLEAN        	+= $(OBJECTS)
+CLEAN       += $(OBJECTS)
 CLEAN 		+= .vscode
 CLEAN 		+= __pycache__
 
@@ -122,9 +119,9 @@ CLEAN 		+= __pycache__
 #
 #============================================================================
 
-SERIAL_PORT	?= $(shell ls /dev/ttyACM?)
+SERIAL_PORT		?= $(shell ls /dev/ttyACM?)
 LPC21ISP_EXE	?= include/tools/lpc21isp_197/lpc21isp_hr_linux.exe
-BOSSAC 	?= include/tools/BOSSA-Arduino/bin/bossac
+BOSSAC 			?= include/tools/BOSSA-Arduino/bin/bossac
 
 .PHONY: main run clean info
 	
@@ -136,9 +133,6 @@ run: main $(LPC21ISP_EXE) $(BOSSAC)
 
 cleanall:
 	rm -rfd *.o tests/*.asm tests/create_tests *.asm $(CLEAN) tests/*.tst include_tests.h
+
 clean:
 	rm -rfd $(CLEAN)
-	@echo ' '
-	
-
-
