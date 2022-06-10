@@ -3,9 +3,10 @@ import sys
 from functools import reduce
 from lexer import lex
 from Parser import Parse
-from compiler import compile_as
+from compiler import compile_asm_, format_write_file
         
-# The 2 function create the "function declarations" for functions defined AFTER the '#' in the test-file.
+# These 2 function create the "function declarations" for functions 
+# defined AFTER the '#' in the test-file.
 # The output of these functions combined is a Tuple: (String, List[Token])
 def make_list_for_func_declarations(func):
     def inner(func_list, function_content):
@@ -19,13 +20,21 @@ def make_list_for_func_declarations(func):
 def create_func_declarations(function_content):
     return list( re.finditer(r'func_ (\w+)', function_content ))
 
-FILE_NAME = sys.argv[1]
-OUTPUT_FILE_NAME = sys.argv[2]
+
+
+FILE_NAME = "tests/t0_sommig.tst"
+OUTPUT_FILE_NAME = "tests/t0_sommig.asm"
 
 content = reduce(lambda x, y: x + y, open(FILE_NAME, "r").readlines())
-
 lexed = lex(content)
-
 _, parsed = Parse(lexed)
+c = compile_asm_( parsed.statements, 
+                     create_func_declarations([], content.split('#')[1]), 
+                     OUTPUT_FILE_NAME[OUTPUT_FILE_NAME.index('/')+1:-4] 
+                ) 
 
-compile_as(parsed.statements, create_func_declarations([], content.split('#')[1]), OUTPUT_FILE_NAME)
+FILE = open(OUTPUT_FILE_NAME, "w")
+format_write_file( c , FILE )
+FILE.close()
+
+    
