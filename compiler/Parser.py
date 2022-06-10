@@ -108,7 +108,7 @@ def parseInScopes(statementlist : List[Statement], cur_scope : Scope):
         
     return parseInScopes(rest, cur_scope.add_statement(statement))
  
-# Parse :: List[Token] -> String -> List[Statement]
+# Parse :: List[Token] -> List[Statement]
 def Parse(tokenlist : List[Token]):
     return parseInScopes(parseTokensToStatements(tokenlist, [], None, None)[1], Scope())
 
