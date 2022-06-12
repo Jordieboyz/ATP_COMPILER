@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Jun 12 04:10:19 2022
-
-@author: boerj
-"""
-
 from tokens import Number, Variable, Is, Add, Minus, Times, Divide
 from Statements import Function, MathStatement, IfStatement, \
                         ReturnFunc, ConditionsLoop, Scope, Output
@@ -21,6 +14,9 @@ from Statements import Statement
 imm = lambda  number: '#' + str(number)
 reg = lambda reg : 'r' + str(reg)
 
+
+# These functions return a potential start or end of a routine
+# push_regs & pop_regs :: Integer -> String
 push_regs = lambda r = None: "push { " + reg(r) + ", lr }" if r else "push { lr }"
 pop_regs = lambda r =   None: "pop { " + reg(r) + ", pc }" if r else "pop { pc }"
 
@@ -45,7 +41,11 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
         
         item, *rest = oldList
         
-        newlist.append(newVal) if item == oldVal else newlist.append(item)
+        if item == oldVal:
+            newlist.append(newVal)  
+        else:
+            newlist.append(item)
+            
         return replace(oldVal, newVal, rest, newlist)
 
     # We need to make sure we add the line "pop { ??? }" at the end of certain routines
@@ -64,14 +64,14 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                                 )
 
         return routineDict
-    
+
     statement, *rest = ast
 
     # If we are working on a new label we need a place to store the instructions.
     # If we have a loop, we need to add the 'push { lr } line.
     # Else we can just add an empty list
     if labelName not in routineDict:
-        #  labelName[:6] == '.loop_'. make sure it is a loop label
+        # make sure it is a loop label
         if labelName[:5] == loopLabel():
             routineDict[labelName] = [push_regs()]
         else:
@@ -79,9 +79,8 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
 
     
 
-    if isinstance(last, MathStatement):
+    if isinstance(last, (MathStatement, ReturnFunc)):
         if isinstance(last.rvalue, Function):
-            
             func_label = last.rvalue.funcname + last.rvalue.func_params[0].content
             
             routineDict[labelName].append(
@@ -177,7 +176,8 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                 
         # Move a function result to r0, we need to declare the function first 
         if isinstance(statement.rvalue, Function):
-            return start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
+            start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
+            statement = None
                 
         
     # Put a branchl instruction in the routineDict so the program can 
@@ -256,7 +256,8 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                         )) 
                             
                 elif isinstance(statement.rvalue, Function):
-                    return start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
+                    start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
+                    statement = None
                             
                         
                         
@@ -283,8 +284,9 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                     varList.append(statement.lvalue.content)
                     
                     if isinstance(statement.rvalue, Function):
-                       return start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
-                    
+                        start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
+                        statement = None
+                        
                     else:
                         routineDict[labelName].append(
                                     get_instruction_string(
@@ -384,6 +386,17 @@ def format_write_file(rDict, openedFile, initLabel = "init"):
         openedFile.write("\n")
         
         
+# yes, ugly, need to remove, but cant
+def remove_extra_pop(routinedict):
+    for routine in routinedict:
+        for index, elem in enumerate(routinedict[routine]):
+            if elem[:3] == 'pop':
+                if index != len(routinedict[routine]):
+                   del  routinedict[routine][index]
+    return routinedict
+        
+    
+    
 # parseInScopes :: List[Statement] -> List[Statement] -> String -> Dict[String, [String]]
 def compile_asm_(ast, funcDecl, filename):
     initLabel = "init"
@@ -391,7 +404,7 @@ def compile_asm_(ast, funcDecl, filename):
     
     # We dont use the 'scratch registers to store 'global' variables
     # So, we need to make sure they won't be used until needed
-    return start_compiling(
+    return remove_extra_pop(start_compiling(
                             ast, 
                             funcDecl,
                             ["", "", "", ""],
@@ -402,3 +415,4 @@ def compile_asm_(ast, funcDecl, filename):
                                              ".align 2"],
                              filename : [ get_reg_init_string(ast) ] },
                             None )
+        )
