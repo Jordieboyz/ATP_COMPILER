@@ -13,9 +13,8 @@ class cortex:
         CMP=        'cmp'
         ADD=        'add'
         SUB=        'sub'
-        MULS=        'muls'
-        UDIV=       'udiv'
-        
+        MUL=        'mul'
+      
     class registers:
         RETURNREG = 'r0'
         R1 = 'r1'
@@ -34,8 +33,7 @@ maths : dict() = {
     Add               : cortex.instructions.ADD,
     Minus        : cortex.instructions.SUB,
     Is          : cortex.instructions.MOV,
-    Times           : cortex.instructions.MULS,
-    Divide        : cortex.instructions.UDIV
+    Times           : cortex.instructions.MUL,
 }
 
 spacing = lambda part, s = ' ' : part+s
@@ -45,7 +43,7 @@ def get_instruction_string(instr, dest, val = None):
     if instr == cortex.instructions.PUSH or instr == cortex.instructions.POP:
         return
     elif instr == cortex.instructions.ADD or instr == cortex.instructions.SUB or \
-        instr == cortex.instructions.MULS or instr == cortex.instructions.UDIV:
+        instr == cortex.instructions.MUL:
         return spacing(instr) + spacing(dest, ', ') + spacing(dest, ', ') + spacing(val)
     
     elif instr[0] == cortex.instructions.BRANCH or instr == cortex.instructions.BRANCHL:
