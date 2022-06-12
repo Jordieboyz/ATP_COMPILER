@@ -1,9 +1,17 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Jun 12 04:10:19 2022
+
+@author: boerj
+"""
+
 from tokens import Number, Variable, Is, Add, Minus, Times, Divide
 from Statements import Function, MathStatement, IfStatement, \
                         ReturnFunc, ConditionsLoop, Scope, Output
 from Parser import get_func_def
 from cortex_map import get_instruction_string, cortex, maths
 from typing import List, Dict
+import copy
 from Statements import Statement
 
 
@@ -13,18 +21,20 @@ from Statements import Statement
 imm = lambda  number: '#' + str(number)
 reg = lambda reg : 'r' + str(reg)
 
+push_regs = lambda r = None: "push { " + reg(r) + ", lr }" if r else "push { lr }"
+pop_regs = lambda r =   None: "pop { " + reg(r) + ", pc }" if r else "pop { pc }"
 
 # These functions return a whole or part of an eventual routine label
 # This to prevent disalignment during the program in naming the newly created labels 
 # returnLabel & loopLabel:: Integer -> String
 returnLabel = lambda n = None: ".ret_" + str(n) if n else ".ret_"
-loopLabel = lambda n = None : ".loop_" + str(n) if n else ".loop_"
+loopLabel = lambda n = None : "loop_" + str(n) if n else "loop_"
 
 # This is the main compile function. It loops (recursively) through the ast and creates cortex-m0 instructions.
 # The instructions get "saved" in the routineDict. The varList keeps track of all the excisting variables. either local or global.
 # start_compiling :: List[Statement] -> List[Statement] -> List[String] -> String -> dict[String, List[String]] -> Statement -> dict[String, List[String]]
 def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList : List[str], labelName : str, routineDict : Dict[str, List[str]], last: Statement ):
-    
+
     # This function replaces the newVal with the oldVal in the oldList and puts them in the newList
     # it essentially creates a new list with repalces values. We can use this to convert
     # global variables (like a function parameter) to their "local" placeholder.
@@ -37,7 +47,7 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
         
         newlist.append(newVal) if item == oldVal else newlist.append(item)
         return replace(oldVal, newVal, rest, newlist)
-    
+
     # We need to make sure we add the line "pop { ??? }" at the end of certain routines
     # However, we need to make sure it matches the push "{ ??? }".
     # Therefore, we can just replace 'push'with 'pop' and 'lr and 'pc'.
@@ -52,25 +62,96 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                                             cortex.registers.LR,
                                                             cortex.registers.PC)
                                                 )
-                # If the labelName start with '.', it is a "second row" scope.
-                # A loop or a return label. We didn't push any registeres in 
-                # these labels , so there is no point of using the replace.
-                else:
-                    routineDict[labelName].append(cortex.instructions.POP+" { pc }")
-        return routineDict
 
-    statement, *rest = ast
+        return routineDict
     
+    statement, *rest = ast
+
     # If we are working on a new label we need a place to store the instructions.
     # If we have a loop, we need to add the 'push { lr } line.
     # Else we can just add an empty list
     if labelName not in routineDict:
-        #  labelName[:6] = '.loop_'. make sure it is a loop label
-        if labelName[:6] == loopLabel():
-            routineDict[labelName] = [cortex.instructions.POP +" { lr }"]
+        #  labelName[:6] == '.loop_'. make sure it is a loop label
+        if labelName[:5] == loopLabel():
+            routineDict[labelName] = [push_regs()]
         else:
            routineDict[labelName] = []
 
+    
+
+    if isinstance(last, MathStatement):
+        if isinstance(last.rvalue, Function):
+            
+            func_label = last.rvalue.funcname + last.rvalue.func_params[0].content
+            
+            routineDict[labelName].append(
+                        get_instruction_string(
+                            cortex.instructions.BRANCHL,
+                            func_label
+                        )) 
+            if func_label not in routineDict:    
+                func_statements = get_func_def(funcDecl, last.rvalue.funcname)
+                
+                # if we enter a raw number in the function, wqe need to give it a space in the varlist
+                # but because it is not a global variable, we dont need to push extra registers
+                # we also have to move the raw number in the wanted register, because it doesnt excist other wise
+                if isinstance(last.rvalue.func_params[0], Number):
+                    # For every start of a function, we need to push the link regsiter
+                    if last.rvalue.funcname not in routineDict:
+                        routineDict[func_label] = [push_regs()]
+                    
+                    newList = copy.deepcopy(varList)
+                    if '' in newList:
+                        newList[newList[:4].index('')] = func_statements.statements[0].func_params[0].content
+                    else:
+                        newList.append(func_statements.statements[0].func_params[0].content)
+                    
+                    routineDict[func_label].append(
+                                     get_instruction_string(
+                                                 cortex.instructions.MOV,
+                                                 reg(newList.index(func_statements.statements[0].func_params[0].content)),
+                                                 imm(last.rvalue.func_params[0].content)
+                                                 )  
+                                     )
+                elif isinstance(last.rvalue.func_params[0], Variable):
+                    if last.rvalue.func_params[0].content in varList:
+                        
+                        if last.rvalue.funcname not in routineDict:
+                            routineDict[func_label] = [push_regs(varList.index(last.rvalue.func_params[0].content))]
+                            
+    
+                            newList = replace(last.rvalue.func_params[0].content, 
+                                                 func_statements.statements[0].func_params[0].content, 
+                                                 varList
+                                        )
+
+                # The first element in the func_statements is the "Function" 
+                # Statement, so this needs to be ignored.
+                # We also need to replace the global variable names with
+                # the given parameters of the function in the registers.
+                start_compiling( func_statements.statements[1:], funcDecl, 
+                                    newList,
+                                    func_label, routineDict,  
+                                    None
+                                )
+                   
+                
+                if isinstance( last.lvalue, ReturnFunc):
+                # make sure the result of the function (stored in r0) gets put in r0
+                    routineDict[labelName].append(
+                                get_instruction_string(
+                                    cortex.instructions.MOV,
+                                    cortex.registers.RETURNREG,
+                                    cortex.registers.RETURNREG
+                                ))
+                else:
+                    routineDict[labelName].append(
+                                get_instruction_string(
+                                    cortex.instructions.MOV,
+                                    reg(varList.index(last.lvalue.content)),
+                                    cortex.registers.RETURNREG
+                                ))
+                
     # Use r0 as return-register. Store the result in r0.
     if isinstance(statement, ReturnFunc):
         
@@ -93,35 +174,11 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                 cortex.registers.RETURNREG, 
                                 reg(varList.index(statement.rvalue.content))
                             ))
-        
+                
         # Move a function result to r0, we need to declare the function first 
         if isinstance(statement.rvalue, Function):
-            
-            # Create branch to function
-            routineDict[labelName].append(
-                        get_instruction_string( 
-                            cortex.instructions.BRANCHL, 
-                            statement.rvalue.funcname
-                        ))
-            
-            func_statements = get_func_def(funcDecl, statement.rvalue.funcname)
-            
-            # For every start of a function, we need to push the link regsiter
-            if statement.rvalue.funcname not in routineDict:
-                routineDict[statement.rvalue.funcname] = ["push { lr }"]
+            return start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
                 
-                # The first element in the func_statements is the "Function" 
-                # Statement, so this needs to be ignored.
-                # We also need to replace the global variable names with
-                # the given parameters of the function in the registers.
-                start_compiling( func_statements.statements[1:], funcDecl, 
-                                    replace( statement.rvalue.func_params[0].content, 
-                                             func_statements.statements[0].func_params[0].content, 
-                                             varList
-                                    ), 
-                                    statement.rvalue.funcname, routineDict,  
-                                    last
-                                )
         
     # Put a branchl instruction in the routineDict so the program can 
     # output the value in r0            
@@ -132,6 +189,7 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                                 'put_number'
                                                 )
                                         )
+
 
     # Perform a comparison between either vars or vars and number
     # This results in a cmp instruction being added to the routine        
@@ -196,6 +254,11 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                             reg(varList.index(statement.lvalue.content)),
                                             reg(varList.index(statement.rvalue.content))
                                         )) 
+                            
+                elif isinstance(statement.rvalue, Function):
+                    return start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
+                            
+                        
                         
             # If the lvalue of statement is not yet declared in the routine.
             # we need to add it to the varList (so it can be used).
@@ -218,12 +281,19 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                 # it is a global var.
                 else:
                     varList.append(statement.lvalue.content)
-                    routineDict[labelName].append(
-                                get_instruction_string(
-                                    cortex.instructions.MOV,
-                                    reg(varList.index(statement.lvalue.content)),
-                                    imm(statement.rvalue.content)
-                                ))
+                    
+                    if isinstance(statement.rvalue, Function):
+                       return start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
+                    
+                    else:
+                        routineDict[labelName].append(
+                                    get_instruction_string(
+                                        cortex.instructions.MOV,
+                                        reg(varList.index(statement.lvalue.content)),
+                                        imm(statement.rvalue.content)
+                                    ))
+
+
 
     # This is a bit of a tricky one.
     # We need to check the condition and based on the result we need to branch
@@ -235,15 +305,15 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                         cortex.instructions.BRANCHL,
                         looplabel
                     ))
+        
+        routineDict[looplabel] = [routineDict[labelName][0]]
         start_compiling([statement.expr, statement.loop], funcDecl, varList,  \
                                             looplabel, routineDict, statement)
  
-
-
-        
-        
+    
     # Create a new scope and so a new label
     elif isinstance(statement, Scope):
+        
         if isinstance(last, IfStatement):
             retLabel = returnLabel(len(routineDict))
             routineDict[labelName].append(
@@ -251,13 +321,24 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                             cortex.instructions.BRANCH + last.operator.expr[:2],
                             retLabel
                         ))
+
             start_compiling(statement.statements, funcDecl, varList, 
                                                   retLabel, routineDict, last)
+                
             
+            routineDict[retLabel].append(
+                    routineDict[labelName][0].replace(
+                                    cortex.instructions.PUSH,
+                                    cortex.instructions.POP).replace(
+                                                    cortex.registers.LR,
+                                                    cortex.registers.PC)
+                                        )
+            
+
             # a loop should be a loop, so we need to branch back to the start of the loop
             # if there is automaticaly added a "pop { pc } to the routine, remove it.
-            if labelName[:6] == loopLabel():
-                if routineDict[retLabel][-1] == cortex.instructions.POP + " { pc }":
+            if labelName[:5] == loopLabel():
+                if routineDict[retLabel][-1][:3] == cortex.instructions.POP:
                     routineDict[retLabel].remove(routineDict[retLabel][-1])
                 
                 # add the instruction to loop back to the start of the loop.
