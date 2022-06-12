@@ -71,10 +71,8 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
            routineDict[labelName] = []
 
     
-
-    if isinstance(last, MathStatement):
+    if isinstance(last, (MathStatement, ReturnFunc)):
         if isinstance(last.rvalue, Function):
-            
             func_label = last.rvalue.funcname + last.rvalue.func_params[0].content
             
             routineDict[labelName].append(
@@ -129,7 +127,7 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                 )
                    
                 
-                if isinstance( last.lvalue, ReturnFunc):
+                if isinstance( last, ReturnFunc):
                 # make sure the result of the function (stored in r0) gets put in r0
                     routineDict[labelName].append(
                                 get_instruction_string(

@@ -62,6 +62,8 @@ void put_string(const char * str, bool endl = false){
    int passed = 0;
    int failed = 0;
 
+
+
    // C++ implementations of certain functions and checks for unit tests
    auto cpp_even    = [](int a){ return (int)(a % 2 == 0); };
    auto cpp_is      = [](int a, int b){ return b; };
@@ -75,6 +77,10 @@ void put_string(const char * str, bool endl = false){
          return a + cpp_sommig( a - 1 );
       return 1;
    }
+   auto cpp_sommig_add = [](int a, int b){return a + cpp_sommig(b);}; 
+   auto cpp_sommig_minus = [](int a, int b){return cpp_sommig(b) - a;} 
+
+
 
    /**
     * @brief
@@ -209,7 +215,12 @@ void put_string(const char * str, bool endl = false){
       #ifdef _t18_mul_add
          check_test( ((uint8_t )(*t18_mul_add)()), cpp_mul_add, 19, 3, 3);
       #endif
-
+      #ifdef _t19_sommig_add
+         check_test( ((uint8_t )(*t19_sommig_add)()), cpp_sommig_add, 9, 7);
+      #endif
+      #ifdef _t20_sommig_minus
+         check_test( ((uint8_t )(*t20_sommig_minus)()), cpp_sommig_minus, 4, 11);
+      #endif
 
       put_string( "\nUnit test passed succesfully: " );
       put_number( passed, true );

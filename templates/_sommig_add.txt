@@ -1,0 +1,15 @@
+k = ?
+f = sommig(?)
+
+k + f
+.k
+#
+
+func_ sommig(n)>
+    result = 0
+    [n $get 1] >
+        result + n
+        n - 1
+    <
+    .result
+<

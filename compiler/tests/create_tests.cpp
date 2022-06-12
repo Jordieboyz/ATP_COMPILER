@@ -147,5 +147,11 @@ int main(){
     Test _mul_add1( IN_PATH(_mul_add), OUT_NAME(_mul_add));
     create_test( _mul_add1, 19, 3, 3 );
 
+    Test _sommig_add( IN_PATH(_sommig_add), OUT_NAME(_sommig_add));
+    create_test( _sommig_add, 9, 7 );
+
+    Test _sommig_minus( IN_PATH(_sommig_minus), OUT_NAME(_sommig_minus));
+    create_test( _sommig_minus, 4, 11 );
+
     return 0;
 }
