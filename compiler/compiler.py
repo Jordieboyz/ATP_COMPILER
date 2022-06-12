@@ -67,7 +67,7 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
     if labelName not in routineDict:
         #  labelName[:6] = '.loop_'. make sure it is a loop label
         if labelName[:6] == loopLabel():
-            routineDict[labelName] = [cortex.instructions.POP +" { lr }"]
+            routineDict[labelName] = [cortex.instructions.PUSH +" { lr }"]
         else:
            routineDict[labelName] = []
 
