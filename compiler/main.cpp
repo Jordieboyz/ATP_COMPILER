@@ -15,7 +15,7 @@ UART_due * serial;
  * 
  * @param c      Given character (which cannot be greater than 3 digits)
  */
-extern "C" void put_number(const char c){ 
+extern "C" void put_number(const char c, bool endl = false){ 
    if( c >= 0 && c <= 9){
       serial->putc( c + '0');
    } else if( c >= 10 && c <= 99){
@@ -26,7 +26,8 @@ extern "C" void put_number(const char c){
       serial->putc( (c - (((c/100)*100))) / 10 + '0');
       serial->putc(  c - ((c/100*100)) - (((int)((c - (c/100*100))  /10)) *10) + '0' );
    }
-   serial->putc('\n');
+   if( endl )
+      serial->putc('\n');
 }
 
 /**
@@ -38,12 +39,15 @@ extern "C" void put_number(const char c){
  * @param str      String to output
  * @param endl     Bool wether we need an '\n' added at the end of the string.
  */
-void put_string(const char * str, bool endl = true){
+void put_string(const char * str, bool endl = false){
    while( *str )
       serial->putc(*str++);
    if( endl )
       serial->putc('\n');
 }
+
+// #define UNIT_TESTS
+#define DEBUG
 
 /**
  * @brief
@@ -59,12 +63,16 @@ void put_string(const char * str, bool endl = true){
    int failed = 0;
 
    // C++ implementations of certain functions and checks for unit tests
-   auto cpp_even  = [](int a, int b){ return (int)(b % 2 == 0); };
-   auto cpp_add   = [](int a, int b){ return a + b; };
-   auto cpp_minus = [](int a, int b){ return a - b; };
-   int cpp_sommig(int a, int b){
+   auto cpp_even    = [](int a){ return (int)(a % 2 == 0); };
+   auto cpp_is      = [](int a, int b){ return b; };
+   auto cpp_add     = [](int a, int b){ return a + b; };
+   auto cpp_minus   = [](int a, int b){ return a - b; };
+   auto cpp_mul     = [](int a, int b){ return a * b; };
+   auto cpp_div     =  [](int a, int b){ return a / b; };
+   auto cpp_mul_add = [](int a, int b, int exp){ return a + (b * exp); };
+   int cpp_sommig(int a){
       if( a > 1)
-         return a + cpp_sommig( a - 1, b );
+         return a + cpp_sommig( a - 1 );
       return 1;
    }
 
@@ -72,21 +80,67 @@ void put_string(const char * str, bool endl = true){
     * @brief
     *  Compare two functions with function pointers.
     * @details
-    *  This functions compares @param res with the 
-    *  output of @param fptr. It increments @see passed or @see failed
+    *  This functions compares res with the 
+    *  output of fptr. It increments @see passed or @see failed
     *  wether the comparison is equal or not.
     *  
     * @param res      This is the result of the performed '*.asm' routine.
-    * @param fptr     This is a function pointer to compare with @see res.
-    * @param a        The first parameter for @param fptr
-    * @param b        The second parameter for @param fptr
+    * @param fptr     This is a function pointer to compare with res.
+    * @param a        The first parameter for fptr
+    * @param b        The second parameter for fptr
     */
-   void check_test( const uint8_t res, int (*fptr)(int, int), int a, int b = -1 ){
+   void check_test( const uint8_t res, int (*fptr)(int), const int a){
+      if( res == fptr(a) )
+         passed++; 
+      else{
+         failed++; 
+         #ifdef DEBUG 
+            put_string("Failed test: ");
+            put_number(passed+failed, true);
+            put_string("[ ");
+            put_number(res);
+            put_string(" == ");
+            put_number(fptr(a));
+            put_string("] ", true);
+         #endif
+      }
+   };
+
+   void check_test( const uint8_t res, int (*fptr)(int, int), 
+                                                const int a, const int b ){ 
       if( res == fptr(a, b) )
-         passed++;
-      else
+         passed++; 
+      else{
          failed++;
-   }; 
+         #ifdef DEBUG 
+            put_string("Failed test: ");
+            put_number(passed+failed, true);
+            put_string("[ ");
+            put_number(res);
+            put_string(" == ");
+            put_number(fptr(a, b));
+            put_string("] ", true);
+         #endif
+      }
+   };
+
+   void check_test( const uint8_t res, int (*fptr)(int, int, int), 
+                                    const int a, const int b , const int c ){
+      if( res == fptr(a, b, c) )
+         passed++;  
+      else{
+         failed++; 
+         #ifdef DEBUG 
+            put_string("Failed test: ");
+            put_number(passed+failed, true);
+            put_string("[ ");
+            put_number(res);
+            put_string(" == ");
+            put_number(fptr(a, b, c));
+            put_string("] ", true);
+         #endif
+      }
+   };
 
    /**
     * @brief
@@ -137,11 +191,30 @@ void put_string(const char * str, bool endl = true){
       #ifdef _t12_sommig
          check_test( ((uint8_t )(*t12_sommig)()), cpp_sommig, 24);
       #endif
+      #ifdef _t13_mul_regs
+         check_test( ((uint8_t )(*t13_mul_regs)()), cpp_mul, 4, 5);
+      #endif
+      #ifdef t14_mul_regs
+         check_test( ((uint8_t )(*t14_mul_regs)()), cpp_mul, 3, 8);
+      #endif
+      #ifdef _t15_var_is_var
+         check_test( ((uint8_t )(*t15_var_is_var)()), cpp_is, 15, 4);
+      #endif
+      #ifdef _t16_var_is_var
+         check_test( ((uint8_t )(*t16_var_is_var)()), cpp_is, 4, 19);
+      #endif
+      #ifdef _t17_mul_add
+         check_test( ((uint8_t )(*t17_mul_add)()), cpp_mul_add, 12, 10, 2);
+      #endif
+      #ifdef _t18_mul_add
+         check_test( ((uint8_t )(*t18_mul_add)()), cpp_mul_add, 19, 3, 3);
+      #endif
 
-      put_string( "Unit test passed succesfully: ", false );
-      put_number( passed );
-      put_string( "Unit test failed: ", false );
-      put_number( failed );
+
+      put_string( "\nUnit test passed succesfully: " );
+      put_number( passed, true );
+      put_string( "Unit test failed: " );
+      put_number( failed, true );
    }
 #endif
 

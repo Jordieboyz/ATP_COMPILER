@@ -29,7 +29,7 @@ struct Test {
     int nthTest = 0;
     std::string inPath;
     std::string outName;
-    int vars[2];
+    int vars[3];
     int nVars;
 
     Test( std::string inPath, std::string outName ) :
@@ -40,7 +40,6 @@ struct Test {
 
 // global variable to keep track of the amount of created tests
 int nTests = 0;
-
 
 /**
  * @brief
@@ -54,12 +53,14 @@ int nTests = 0;
  * @param var1          The first parameter for the @struct Test::vars
  * @param var2          The second parameter for the @struct Test::vars
  */
-void create_test(Test &t, int var1, int var2 = -1){
+void create_test(Test &t, int var1, int var2 = -1, int var3 = -1){
     // setup for the creation of the test
     t.nthTest = nTests++;
-    t.nVars = (var2 != -1) + 1;
+    t.nVars = (var3 == -1) ? (var2 == -1) ? 2 : 1: 3;
     t.vars[0] = var1;
     t.vars[1] = var2;
+    t.vars[2] = var3;
+
 
     // fstream for input and output files
     std::fstream in(t.inPath, std::fstream::in);
@@ -81,7 +82,14 @@ void create_test(Test &t, int var1, int var2 = -1){
     out.close();
 }
 
+
+
+
+
 int main(){ 
+
+
+
     Test _even_odd1( IN_PATH(_even_odd), OUT_NAME(_even_odd));
     create_test(_even_odd1, 3 );
 
@@ -121,5 +129,23 @@ int main(){
     Test _sommig2( IN_PATH(_sommig), OUT_NAME(_sommig));
     create_test( _sommig2, 24 );
     
+    Test _mul_regs( IN_PATH(_mul_regs), OUT_NAME(_mul_regs));
+    create_test( _mul_regs, 4, 5 );
+
+    Test _mul_regs1( IN_PATH(_mul_regs), OUT_NAME(_mul_regs));
+    create_test( _mul_regs1, 3, 8 );
+
+    Test _var_is_var( IN_PATH(_var_is_var), OUT_NAME(_var_is_var));
+    create_test( _var_is_var, 15, 4 );
+
+    Test _var_is_var1( IN_PATH(_var_is_var), OUT_NAME(_var_is_var));
+    create_test( _var_is_var1, 4, 19 );
+
+    Test _mul_add( IN_PATH(_mul_add), OUT_NAME(_mul_add));
+    create_test( _mul_add, 12, 10, 2 );
+
+    Test _mul_add1( IN_PATH(_mul_add), OUT_NAME(_mul_add));
+    create_test( _mul_add1, 19, 3, 3 );
+
     return 0;
 }
