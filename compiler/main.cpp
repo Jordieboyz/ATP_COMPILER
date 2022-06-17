@@ -62,8 +62,6 @@ void put_string(const char * str, bool endl = false){
    int passed = 0;
    int failed = 0;
 
-
-
    // C++ implementations of certain functions and checks for unit tests
    auto cpp_even    = [](int a){ return (int)(a % 2 == 0); };
    auto cpp_is      = [](int a, int b){ return b; };
@@ -78,8 +76,7 @@ void put_string(const char * str, bool endl = false){
       return 1;
    }
    auto cpp_sommig_add = [](int a, int b){return a + cpp_sommig(b);}; 
-   auto cpp_sommig_minus = [](int a, int b){return cpp_sommig(b) - a;} 
-
+   auto cpp_sommig_minus = [](int a, int b){return cpp_sommig(b) - a;};
 
 
    /**
@@ -230,7 +227,7 @@ void put_string(const char * str, bool endl = false){
 #endif
 
 int main( void ){
-   delay_us( 1000 );
+   delay_us( 2000 );
 
    UART_due uart;
    serial = &uart;
