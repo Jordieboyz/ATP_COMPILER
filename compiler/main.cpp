@@ -47,7 +47,7 @@ void put_string(const char * str, bool endl = false){
 }
 
 // #define UNIT_TESTS
-#define DEBUG
+
 
 /**
  * @brief
@@ -56,6 +56,7 @@ void put_string(const char * str, bool endl = false){
  *  This macro is automaticly defined in the @see ../Makefile.inc
  */
 #ifdef UNIT_TESTS 
+   #define DEBUG
    #include "include_tests.h"
    
    // global variables to keep tracks of the passed or failed tests.
@@ -68,7 +69,6 @@ void put_string(const char * str, bool endl = false){
    auto cpp_add     = [](int a, int b){ return a + b; };
    auto cpp_minus   = [](int a, int b){ return a - b; };
    auto cpp_mul     = [](int a, int b){ return a * b; };
-   auto cpp_div     =  [](int a, int b){ return a / b; };
    auto cpp_mul_add = [](int a, int b, int exp){ return a + (b * exp); };
    int cpp_sommig(int a){
       if( a > 1)
@@ -79,6 +79,16 @@ void put_string(const char * str, bool endl = false){
    auto cpp_sommig_minus = [](int a, int b){return cpp_sommig(b) - a;};
 
 
+   void get_test_info(int result, int cpp_result){
+      put_string("\nExecuted test number: ");
+      put_number(passed+failed, true);
+
+      put_string("-> ( ");
+      put_number(result);
+      put_string(" == ");
+      put_number(cpp_result);
+      put_string(" )", true);
+   }
    /**
     * @brief
     *  Compare two functions with function pointers.
@@ -93,56 +103,26 @@ void put_string(const char * str, bool endl = false){
     * @param b        The second parameter for fptr
     */
    void check_test( const uint8_t res, int (*fptr)(int), const int a){
-      if( res == fptr(a) )
-         passed++; 
-      else{
-         failed++; 
-         #ifdef DEBUG 
-            put_string("Failed test: ");
-            put_number(passed+failed, true);
-            put_string("[ ");
-            put_number(res);
-            put_string(" == ");
-            put_number(fptr(a));
-            put_string("] ", true);
-         #endif
-      }
+      ( res == fptr(a) ) ? passed++: failed++; 
+      #ifdef DEBUG
+         get_test_info(res, fptr(a));
+      #endif
    };
 
    void check_test( const uint8_t res, int (*fptr)(int, int), 
                                                 const int a, const int b ){ 
-      if( res == fptr(a, b) )
-         passed++; 
-      else{
-         failed++;
-         #ifdef DEBUG 
-            put_string("Failed test: ");
-            put_number(passed+failed, true);
-            put_string("[ ");
-            put_number(res);
-            put_string(" == ");
-            put_number(fptr(a, b));
-            put_string("] ", true);
-         #endif
-      }
+      ( res == fptr(a, b) ) ? passed++: failed++;
+      #ifdef DEBUG
+         get_test_info(res, fptr(a, b));
+      #endif
    };
 
    void check_test( const uint8_t res, int (*fptr)(int, int, int), 
                                     const int a, const int b , const int c ){
-      if( res == fptr(a, b, c) )
-         passed++;  
-      else{
-         failed++; 
-         #ifdef DEBUG 
-            put_string("Failed test: ");
-            put_number(passed+failed, true);
-            put_string("[ ");
-            put_number(res);
-            put_string(" == ");
-            put_number(fptr(a, b, c));
-            put_string("] ", true);
-         #endif
-      }
+      ( res == fptr(a, b, c) ) ? passed++: failed++; 
+      #ifdef DEBUG
+         get_test_info(res, fptr(a, b, c));
+      #endif
    };
 
    /**

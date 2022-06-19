@@ -5,38 +5,38 @@ class cortex:
     START_LABEL = 'start'
     
     class instructions:
-        PUSH =      'push'
-        POP =       'pop'
-        BRANCHL =   'bl'
-        BRANCH =    'b'
-        MOV =       'mov'
-        STORE=      'str'
-        LOAD=       'ldr'
-        CMP=        'cmp'
-        ADD=        'add'
-        SUB=        'sub'
-        MUL=        'mul'
+        PUSH    = 'push'
+        POP     = 'pop'
+        BRANCHL = 'bl'
+        BRANCH  = 'b'
+        MOV     = 'mov'
+        STORE   = 'str'
+        LOAD    = 'ldr'
+        CMP     = 'cmp'
+        ADD     = 'add'
+        SUB     = 'sub'
+        MUL     = 'mul'
       
     class registers:
-        RETURNREG = 'r0'
-        R1 = 'r1'
-        R2 = 'r2'
-        R3 = 'r3'
-        R4 = 'r4'
-        R5 = 'r5'
-        R6 = 'r6'
-        FP = 'r7'
-        SP = 'sp'
-        LR = 'lr'
-        PC = 'pc'
+        RETURNREG   = 'r0'
+        R1          = 'r1'
+        R2          = 'r2'
+        R3          = 'r3'
+        R4          = 'r4'
+        R5          = 'r5'
+        R6          = 'r6'
+        FP          = 'r7'
+        SP          = 'sp'
+        LR          = 'lr'
+        PC          = 'pc'
         
         
 
 maths : dict() = {
-    Add               : cortex.instructions.ADD,
-    Minus        : cortex.instructions.SUB,
-    Is          : cortex.instructions.MOV,
-    Times           : cortex.instructions.MUL,
+    Add     : cortex.instructions.ADD,
+    Minus   : cortex.instructions.SUB,
+    Is      : cortex.instructions.MOV,
+    Times   : cortex.instructions.MUL,
 }
 
 

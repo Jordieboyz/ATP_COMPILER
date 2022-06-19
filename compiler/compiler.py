@@ -1,43 +1,37 @@
+from typing import List, Dict, Tuple
 from tokens import Number, Variable, Is, Add, Minus, Times, Divide
 from Statements import Function, MathStatement, IfStatement, \
                         ReturnFunc, ConditionsLoop, Scope, Output
 from Parser import get_func_def
-from cortex_map import get_instruction_string, cortex, maths
-from typing import List, Dict
 from Statements import Statement
+from cortex_map import get_instruction_string, cortex, maths
+
 
 INT_SIZE = 4
 
-# These functions create a "cortex-m0" variable given a number.
-# This to make teh code a lot cleaner
-# imm & reg :: Integer -> String
-imm = lambda  number: '#' + str(number)
-reg = lambda reg : 'r' + str(reg)
+# These are all lambda functions to make the code a lot cleaner
+# The function is the add the input to a constant string
+# every lambda has it's own function ans producxes it's own string
+# Any:: Any -> String
 
+# These lambda functions produce a cortex-m0 using the right syntax
+imm             = lambda number: '#' + str(number)
+reg             = lambda reg   : 'r' + str(reg)
 
-# These functions return a potential start or end of a routine
-# push_regs  :: Integer -> String
-def push_regs(r = None):
-    if r:
-        if r[0] == 'r': 
-            return "push { " + r + ", lr }" 
-        else:
-            return "push { " + reg(r) + ", lr }"
-    else:
-       return "push { lr }"
-
+# This functions return a potential start of a routine
+push_regs       = lambda r = None: "push { " + str(r) + ", lr }" if r else "push { lr }"
 
 # These functions return a whole or part of an eventual routine label
 # This to prevent disalignment during the program in naming the newly created labels 
-# returnLabel & loopLabel:: Integer -> String
-scopeLabel    = lambda n = None:  ".scop_"      + str(n) if n else ".scop_"
-loopCondLabel = lambda n = None : ".loop_cond_" + str(n) if n else ".loop_cond_"
-endFuncLabel  = lambda n = None:  ".end_"       + str(n) if n else ".end_"
+scopeLabel      = lambda n = None: ".scop_"      + str(n) if n else ".scop_"
+loopCondLabel   = lambda n = None: ".loop_cond_" + str(n) if n else ".loop_cond_"
+endFuncLabel    = lambda n = None: ".end_"       + str(n) if n else ".end_"
+
 
 # This is the main compile function. It loops (recursively) through the ast and creates cortex-m0 instructions.
 # The instructions get "saved" in the routineDict. The varList keeps track of all the excisting variables. either local or global.
 # start_compiling :: List[Statement] -> List[Statement] -> List[String] -> String -> dict[String, List[String]] -> Statement -> dict[String, List[String]]
-def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList : List[str], labelName : str, routineDict : Dict[str, List[str]], last: Statement ):
+def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList : List[str], labelName : str, routineDict : Dict[str, List[str]], last: Statement ) -> Dict[str, List[str]]: 
     # We return the routineDict if we looped through all the statements (in a scope)
     if not ast:
         return routineDict
@@ -50,7 +44,7 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
         routineDict[labelName] = []
 
     
-    # Here we create the implementation wther it does or doesnt already excists
+    # Here we create the implementation of a function wether it does or doesnt already excists
     # in the routineDict. Our function NEED to return for it to work
     # so there is no point using it as an 'void' function aka without expression.
     if isinstance(last, (MathStatement, ReturnFunc)):
@@ -168,9 +162,6 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
     # just the r4, r5, r6 and r7.in functions, we can use as many as there 
     # is space on the stack. (also not really true, if we have to much variables, we lose em)
     
-    # TODO!
-    # I could implement this problem, but we dont really need it in this small scaled project
-    
     # Use r0 as return-register. Store the result in r0.
     if isinstance(statement, ReturnFunc):
         # Move a number in r0
@@ -197,7 +188,7 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                     imm((varList.index(statement.rvalue.content)+1) * INT_SIZE)
                                 ))
                     
-                    # create a somewht fixed end_function label
+                    # create a somewhat fixed end_function label
                     endFLabel = endFuncLabel(labelName)
                     
                     # If this function doesn't excist yet, we create it.
@@ -247,12 +238,16 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
             start_compiling([None], funcDecl, varList, labelName, routineDict, statement)
             # Local scope?
             if '' not in varList:
+
+                # create a somewhat fixed end_function label
                 endFLabel = endFuncLabel(labelName)
 
+                # If this function doesn't excist yet, we create it.
                 if endFLabel not in routineDict:
                     routineDict[endFLabel] = []
                 
-                
+                    # we pretty much remove the stack and restore everything
+                    # we stated in the beginning of the function
                     routineDict[endFLabel].append(
                                 get_instruction_string(
                                     cortex.instructions.MOV,
@@ -274,6 +269,7 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                                             cortex.registers.LR,
                                                             cortex.registers.PC)
                                                 )
+                # We make sure we branch to the end_function label
                 routineDict[labelName].append( 
                             get_instruction_string(
                                 cortex.instructions.BRANCH, 
@@ -295,22 +291,8 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
     elif isinstance( statement, IfStatement):
         if isinstance( statement.lvalue, Variable):
             if isinstance( statement.rvalue, Number):
-                routineDict[labelName].append(
-                            get_instruction_string(
-                                cortex.instructions.LOAD,
-                                cortex.registers.RETURNREG,
-                                imm((varList.index(statement.lvalue.content)+1) * INT_SIZE)
-                            ))
-                
-                routineDict[labelName].append(
-                            get_instruction_string(
-                                cortex.instructions.CMP,
-                                reg(varList.index(statement.lvalue.content)),
-                                imm(statement.rvalue.content)
-                            ))
-                                                
-            elif isinstance( statement.rvalue, Variable):
-                if statement.rvalue.content in varList:
+                if statement.lvalue.content in varList:
+                    # before comparison, we need to load the value from the stack
                     routineDict[labelName].append(
                                 get_instruction_string(
                                     cortex.instructions.LOAD,
@@ -322,13 +304,33 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                 get_instruction_string(
                                     cortex.instructions.CMP,
                                     reg(varList.index(statement.lvalue.content)),
-                                    reg(varList.index(statement.rvalue.content))
+                                    imm(statement.rvalue.content)
                                 ))
+                                                    
+                elif isinstance( statement.rvalue, Variable):
+                    if statement.rvalue.content in varList:
+                        routineDict[labelName].append(
+                                    get_instruction_string(
+                                        cortex.instructions.LOAD,
+                                        cortex.registers.RETURNREG,
+                                        imm((varList.index(statement.lvalue.content)+1) * INT_SIZE)
+                                    ))
+                        
+                        routineDict[labelName].append(
+                                    get_instruction_string(
+                                        cortex.instructions.CMP,
+                                        reg(varList.index(statement.lvalue.content)),
+                                        reg(varList.index(statement.rvalue.content))
+                                    ))
+                else:
+                    None
+                    # this is a clause we get to isf we use an undefined variable in an ifstatement
+                    # I could implement this.
             
             
            
     # Create a mathematical instruction between vars or vars and numbers
-    # This results in a add, sub, muls udiv or mov instruction being added to the routine
+    # This results in a add, sub, muls or mov instruction being added to the routine
     elif isinstance(statement, MathStatement):
         if isinstance(statement.lvalue, Variable):
             if statement.lvalue.content in varList:
@@ -342,6 +344,8 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                     reg(varList.index(statement.lvalue.content)),
                                     imm(statement.rvalue.content)
                                  ))
+                        # If we are in a local scope of (f.e.) a function
+                        # We need to store this variable on the stack
                         if '' not in varList:
                             routineDict[labelName].append( 
                                         get_instruction_string(
@@ -349,8 +353,10 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                             reg(varList.index(statement.lvalue.content)), 
                                             imm((varList.index(statement.lvalue.content)+1) * INT_SIZE)
                                         ))
-                        
+                
                     elif isinstance(statement.operator, (Add,Minus,Times,Divide)):
+                        # Check wether we are working in the 'global' or a local scope
+                        # local scope?
                         if '' not in varList:
                             routineDict[labelName].append( 
                                         get_instruction_string(
@@ -370,6 +376,7 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                             reg(varList.index(statement.lvalue.content)), 
                                             imm((varList.index(statement.lvalue.content)+1) * INT_SIZE)
                                         )) 
+                        # global scope. simple instruction  
                         else:
                             routineDict[labelName].append(
                                 get_instruction_string(
@@ -381,20 +388,25 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                 elif isinstance(statement.rvalue, Variable):
                     # rvalue is a variable
                     if statement.rvalue.content in varList:
+                        # This is an already initialized variable
                         if isinstance(statement.operator, Is):
+                            # local scope?
                             if '' not in varList:
+                                # Move value of the rvalue in the register of the lvalue
                                 routineDict[labelName].append(
                                             get_instruction_string(
                                                 cortex.instructions.MOV,
                                                 reg(varList.index(statement.lvalue.content)),
                                                 reg(varList.index(statement.rvalue.content)),
                                             ))
+                                # store the 'moved' on the stack 
                                 routineDict[labelName].append(
                                             get_instruction_string(
                                                 cortex.instructions.STORE,
                                                 reg(varList.index(statement.lvalue.content)),
                                                 reg(varList.index(statement.rvalue.content)),
                                             ))
+                            # global scope. simple instruction.
                             else:
                                 routineDict[labelName].append(
                                     get_instruction_string(
@@ -404,31 +416,38 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                                     ))          
 
                         elif isinstance(statement.operator, ( Add,Minus,Times,Divide)):
+                            # local scope?
                             if '' not in varList:
+                                # we need to load the lvalue from the stack in a register before operating with it
                                 routineDict[labelName].append( 
                                             get_instruction_string(
                                                 cortex.instructions.LOAD, 
                                                 reg(varList.index(statement.lvalue.content)), 
                                                 imm((varList.index(statement.lvalue.content)+1) * INT_SIZE)
                                             ))
+                                # we need to load the rvalue from the stack in a register before operating with it
                                 routineDict[labelName].append( 
                                             get_instruction_string(
                                                 cortex.instructions.LOAD, 
                                                 reg(varList.index(statement.rvalue.content)), 
                                                 imm((varList.index(statement.rvalue.content)+1) * INT_SIZE)
                                             ))
+                                # 'perform' the maths on the already loaded registers
                                 routineDict[labelName].append(
                                             get_instruction_string(
                                                 maths[type(statement.operator)],
                                                 reg(varList.index(statement.lvalue.content)),
                                                 reg(varList.index(statement.rvalue.content))
                                             )) 
+                                # Store the result of the operation back on the stack
                                 routineDict[labelName].append( 
                                             get_instruction_string(
                                                 cortex.instructions.STORE, 
                                                 reg(varList.index(statement.lvalue.content)), 
                                                 imm((varList.index(statement.lvalue.content)+1) * INT_SIZE)
                                             ))
+
+                            # global scope, simple instruction
                             else:
                                 routineDict[labelName].append(
                                             get_instruction_string(
@@ -454,14 +473,15 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
                         varList[varList[:4].index('')] = statement.lvalue.content
                     else:
                         varList.append(statement.lvalue.content)
-                        
+
+                    # move value in chosen register    
                     routineDict[labelName].append(
                                  get_instruction_string(
                                     cortex.instructions.MOV,
                                     reg(varList.index(statement.lvalue.content)),
                                     imm(statement.rvalue.content)
                                  ))
-                    
+                    # store the value on the stack
                     routineDict[labelName].append(
                                 get_instruction_string(
                                     cortex.instructions.STORE,
@@ -527,8 +547,9 @@ def start_compiling( ast : List[Statement], funcDecl : List[Statement], varList 
     return start_compiling(rest, funcDecl, varList, labelName, routineDict, 
                                                                     statement)
 
-
-def get_n_variables_in_scope(ast, n = 0):
+# Return the amount of initialized variables in this ast aka this direct scope
+# get_n_variables_in_scope :: List[Statement] -> Integer -> Integer
+def get_n_variables_in_scope(ast : List[Statement], n : int = 0) -> int:
     if not ast:
         return n
     
@@ -540,8 +561,11 @@ def get_n_variables_in_scope(ast, n = 0):
     
     return get_n_variables_in_scope(rest, n)
     
-
-def finish_compiling_simple(rDict, nDict = dict()):
+import copy
+# This works, but is functional-wise terrible...
+# It kinda fixes the problem with wrong order of routines and adds the last 'pop' instruction
+# finish_compiling_simple :: Dict[Statement] -> Dict[Statement] -> Dict[Statement]
+def finish_compiling_simple(rDict : Dict[str, List[str]], nDict : Dict[str, List[str]] = dict()) -> Dict[str, List[str]]:
     def get_name(instruction): return instruction[(instruction.index(' ')):].replace(" ", "")
     listt = list(rDict.keys())
     fresh_list = [listt[0], listt[1]]
@@ -574,8 +598,8 @@ def finish_compiling_simple(rDict, nDict = dict()):
     return nDict
 
         
-# parseInScopes :: List[Statement] -> List[Statement] -> String -> Dict[String, [String]]
-def compile_asm_(ast, funcDecl, filename):
+# parseInScopes :: List[Statement] -> List[Statement] -> String -> Dict[String, List[String]]
+def compile_asm_(ast : List[Statement], funcDecl : List[Tuple[str, List[Statement]]], filename : str) -> Dict[str, List[str]]:
     initLabel = "init"
     cortex.START_LABEL = filename
     
@@ -598,7 +622,7 @@ def compile_asm_(ast, funcDecl, filename):
         
 # This function jsut formats the created dictionary during the compilation
 # and writes it to the openedFile
-def format_write_file(rDict, openedFile, initLabel = "init"):
+def format_write_file(rDict : Dict[str, List[str]], openedFile : str, initLabel : str = "init") -> None:
     for init in rDict[initLabel]:
         openedFile.write(init + "\n")
     
